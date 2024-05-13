@@ -103,7 +103,7 @@ class Constellation:
         """
         if self.map.shape[0] == self.M:
             print("Map already pruned")
-            pass
+            return None
 
         amps = np.abs(self.map)
         n_drop = self.map.shape[0] - self.M      # The number of points to drop

@@ -12,12 +12,13 @@ class Signal:
         self.amp = amplitude    # Amplitude
         self.message = message      # Message as an array of symbols, np.array([0, 1, 2, 3, 0, 1, 2, 2]) etc
         self.M = len(np.unique(self.message))   # The number of symbols
+        self.sps = int(self.dur * self.fs / len(self.message))  # Samples per symbol
 
         self.samples = None
 
     def create_samples(self, freq, theta=0, amp=1):
         """
-        signal = A * e^i(2pi*f*t + theta)
+        Signal = A * np.cos(2 * np.pi * f * t + theta) + A * 1j * np.sin(2 * np.pi * f * t + theta)
         """
         t = 1/self.fs * np.arange(self.dur * self.fs)
 
@@ -33,66 +34,54 @@ class Signal:
         if type(amp) == np.ndarray:
             t = t[0:len(amp)]
 
-        z = amp * np.exp(1j * (2 * np.pi * freq * t + theta))  # creates sinusoid at f Hz with theta phase shift
+        z = amp * np.cos(2 * np.pi * freq * t + theta) + amp * 1j * np.sin(2 * np.pi * freq * t + theta)
         z = np.array(z)
         z = z.astype(np.complex64)
 
         return z
 
-    def ASK(self, sps=None):
+    def ASK(self):
         """
         samples = A * e^i(*2pi*f*t + theta)
         With ASK we are simply applying the A in the above equation
         """
-        # If no samples per symbol is provided then just fill the entire signal
-        if not sps:
-            sps = int(self.dur * self.fs / len(self.message))
-
-        amp_mod_z = np.repeat(self.message, sps)       # repeat each of the element of the message, sps times
+        amp_mod_z = np.repeat(self.message, self.sps)       # repeat each of the element of the message, sps times
         amp_mod_z += 1  # Add 1 so amplitude is never 0 (I think this is necessary but it might not be)
 
         self.samples = self.samples[0:len(amp_mod_z)]   # Trim so they are the same length
         self.samples = self.samples * amp_mod_z     # Apply the modulation
         self.samples = self.samples.astype(np.complex64)
 
-    def FSK(self, sps=None):
+    def FSK(self):
         """
         samples = A * e^i(2pi*f*t + theta)
 
         FSK creates new samples where the f in the equation above is modulated by the symbols. Makes no attempt
         to fix phase shifts
         """
-        # If no samples per symbol is provided then just fill the entire signal
-        if not sps:
-            sps = int(self.dur * self.fs / len(self.message))
-
         freqs = self.message + 1      # Add one to avoid zero frequency
         freqs = freqs / max(freqs)   # Normalize
         freqs = freqs * self.f
-        f_mod_z = np.repeat(freqs, sps)
+        f_mod_z = np.repeat(freqs, self.sps)
 
         z = self.create_samples(freq=f_mod_z, theta=0)
 
         self.samples = z
         self.samples = self.samples.astype(np.complex64)
 
-    def PSK(self, sps=None):
+    def PSK(self):
         """
         samples = A * e^i(2pi*f*t + theta)
 
         PSK creates new samples where the theta in the equation above is modulated by the symbols.
         """
-        # If no samples per symbol is provided then just fill the entire signal
-        if not sps:
-            sps = int(self.dur * self.fs / len(self.message))
-
         phases = np.pi + np.pi * (self.message / max(self.message))   # Create a different phase shift for each symbol
-        p_mod_z = np.repeat(phases, sps)
+        p_mod_z = np.repeat(phases, self.sps)
 
         z = self.create_samples(freq=self.f, theta=p_mod_z)
         self.samples = z.astype(np.complex64)
 
-    def QPSK(self, sps=None):
+    def QPSK(self):
         """
          samples = A * e^i(2pi*f*t + theta)
          from euler, e^i(x) = cos(x) + isin(x)
@@ -102,31 +91,21 @@ class Signal:
 
           if QPSK we manipulate phase, i.e we encode our data into the theta term of the above equation
         """
-        # If no samples per symbol is provided then just fill the entire signal
-        if not sps:
-            sps = int(self.dur * self.fs / len(self.message))
-
-        t = 1 / self.fs * np.arange(self.dur * self.fs)
         M = len(np.unique(self.message))    # The number of symbols
 
         # Convert the message symbols to M radian phase offsets with a pi/M bias from zero
         # i.e. if we had 4 symbols make them 45, 135, 225, 315 degree phase offsets (1/4pi, 3/4pi, 5/4pi, 7/4pi)
         symbols = self.message * 2 * np.pi / M + np.pi/ M
-        message = np.repeat(symbols, sps)
+        message = np.repeat(symbols, self.sps)
 
-        t = t[0:len(message)]   # Trim t down to the right length
-
-        z = np.cos(2 * np.pi * self.f * t + message) + 1j*np.sin(2 * np.pi * self.f * t + message)
+        z = self.create_samples(freq=self.f, theta=message)
 
         self.samples = z.astype(np.complex64)
 
-    def QAM(self, sps=None, type="square"):
+    def QAM(self, type="square"):
         """
         It's QAM! Creates the most ideal square QAM possible for the number of symbols supplied
         """
-        if not sps:
-            sps = int(self.dur * self.fs / len(self.message))
-
         # Create the constellation map - a lookup table of values that will be indexed by the message values
         c = Constellation(M=self.M)
 
@@ -140,7 +119,7 @@ class Signal:
         c.prune()
         c.normalise()
 
-        message = np.repeat(self.message, sps)
+        message = np.repeat(self.message, self.sps)
 
         offsets = c.map[message]      # Index the map by the symbols
 
@@ -148,7 +127,7 @@ class Signal:
 
         self.samples = z
 
-    def CPFSK(self, sps=None):
+    def CPFSK(self):
         """
         samples = A * e^i(2pi*f*t + theta)
 
@@ -164,15 +143,10 @@ class Signal:
         #   Change phase vector so it is always < 2pi
         #   To speed up computation, can precompute the phase offset per symbol
         # ***
-
-        # If no samples per symbol is provided then just fill the entire signal
-        if not sps:
-            sps = int(self.dur * self.fs / len(self.message))
-
         freqs = self.message + 1      # Add one to avoid zero frequency
         freqs = freqs / max(freqs)   # Normalize
         freqs = freqs * self.f
-        f_mod_z = np.repeat(freqs, sps)     # FSK message
+        f_mod_z = np.repeat(freqs, self.sps)     # FSK message
 
         # Cumulative phase offset
         delta_phi = 2.0 * f_mod_z * np.pi / self.fs    # Change in phase at every timestep (in radians per timestep)
