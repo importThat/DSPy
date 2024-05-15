@@ -3,9 +3,9 @@ from Signal import Signal
 import numpy as np
 
 
-F = 100     # Hz, This will be the highest frequency that will occur in the modulated wave
+F = 50     # Intermediate Hz, This will be the highest frequency that will occur in the modulated wave
 
-MESSAGE = Utils.create_message(n=32, m=64) # Message symbols
+MESSAGE = Utils.create_message(n=100, m=6) # Message symbols
 
 SYMBOL_RATE = 50      # Symbols per second
 DUR = len(MESSAGE) / SYMBOL_RATE    # Message duration
@@ -18,7 +18,17 @@ while Fs < F * 2:
 
 s = Signal(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 
-s.QAM(type="square")
+#s.QAM(type="square")
+s.ASK()
 #s.plot("scatter")
-s.plot("constellation")
-s.save(fn="QAM_Test")
+#s.plot("fft")
+s.save(fn="ASK_Test")
+
+
+# import wave
+#
+# with wave.open("sound.wav", "wb") as f:
+#     f.setnchannels(1)
+#     f.setsampwidth(2)
+#     f.setframerate(0)
+#     f.writeframesraw(s.samples)

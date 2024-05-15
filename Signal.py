@@ -34,8 +34,7 @@ class Signal:
         if type(amp) == np.ndarray:
             t = t[0:len(amp)]
 
-        z = amp * np.cos(2 * np.pi * freq * t + theta) + amp * 1j * np.sin(2 * np.pi * freq * t + theta)
-        z = np.array(z)
+        z = amp * (np.cos(2 * np.pi * freq * t + theta) + 1j * np.sin(2 * np.pi * freq * t + theta))
         z = z.astype(np.complex64)
 
         return z
@@ -47,10 +46,14 @@ class Signal:
         """
         amp_mod_z = np.repeat(self.message, self.sps)       # repeat each of the element of the message, sps times
         amp_mod_z += 1  # Add 1 so amplitude is never 0 (I think this is necessary but it might not be)
+        amp_mod_z = amp_mod_z / max(amp_mod_z)      # Scale it
 
-        self.samples = self.samples[0:len(amp_mod_z)]   # Trim so they are the same length
-        self.samples = self.samples * amp_mod_z     # Apply the modulation
-        self.samples = self.samples.astype(np.complex64)
+        self.samples = self.create_samples(freq=self.f, amp=amp_mod_z)
+
+
+        # self.samples = self.samples[0:len(amp_mod_z)]   # Trim so they are the same length
+        # self.samples = self.samples * amp_mod_z     # Apply the modulation
+        # self.samples = self.samples.astype(np.complex64)
 
     def FSK(self):
         """
@@ -66,8 +69,7 @@ class Signal:
 
         z = self.create_samples(freq=f_mod_z, theta=0)
 
-        self.samples = z
-        self.samples = self.samples.astype(np.complex64)
+        self.samples = z.astype(np.complex64)
 
     def PSK(self):
         """
@@ -80,6 +82,13 @@ class Signal:
 
         z = self.create_samples(freq=self.f, theta=p_mod_z)
         self.samples = z.astype(np.complex64)
+
+    def PSM(self):
+        """
+        Pulse-spacing modulation, also pulse position modulation. Modulates signals by changing the time difference
+        between pulses
+        """
+        pass
 
     def QPSK(self):
         """
@@ -158,40 +167,82 @@ class Signal:
 
         self.samples = z
 
-    def plot(self, type, nfft=1024):
+    def plot(self, type: str, nfft=1024):
 
         if type == "specgram":
-            plt.specgram(self.samples, NFFT=nfft, Fs=self.fs)
+            intermediate = self.create_samples(freq=-1*self.f)
+            base_band = self.samples * intermediate
+
+            plt.specgram(base_band, NFFT=nfft, Fs=self.fs)
+            plt.title(f"Specgram at Baseband (NFFT={nfft})")
+            plt.ylabel("Frequency (Hz)")
+            plt.xlabel("Time (s)")
+            plt.show()
 
         elif type == 'psd':
-            plt.psd(self.samples, NFFT=nfft, Fs=self.fs)
+            intermediate = self.create_samples(freq=-1*self.f)
+            base_band = self.samples * intermediate
+
+            plt.psd(base_band, NFFT=nfft, Fs=self.fs)
+            plt.title(f"PSD at Baseband (NFFT={nfft})")
+            plt.axhline(0, color='lightgray')  # x = 0
+            plt.axvline(0, color='lightgray')  # y = 0
+            plt.grid(True)
+            plt.show()
 
         elif type == "scatter":
             plt.scatter(self.samples.real[0:1000000], self.samples.imag[0:1000000])
+            plt.ylabel("Imaginary")
+            plt.xlabel("Real")
+            plt.title(f"Scatter at Intermediate (F={self.f})")
+            plt.axhline(0, color='lightgray')  # x = 0
+            plt.axvline(0, color='lightgray')  # y = 0
+            plt.show()
 
         elif type == 'constellation':
-            #sps = int(self.dur * self.fs / len(self.message))
-
-            intermediate = self.create_samples(freq=-100)
+            intermediate = self.create_samples(freq=-1*self.f)
             base_band = self.samples * intermediate
+
             plt.scatter(base_band.real, base_band.imag)
-            plt.grid(True)
+            plt.ylabel("Imaginary")
+            plt.xlabel("Real")
+            plt.title("Constellation at Baseband")
+            plt.axhline(0, color='lightgray')  # x = 0
+            plt.axvline(0, color='lightgray')  # y = 0
             plt.xlim(-1.2, 1.2)
             plt.ylim(-1.2, 1.2)
             plt.show()
 
         elif type == "fft":
-            S = np.fft.fftshift(np.fft.fft(self.samples))
+            intermediate = self.create_samples(freq=-1*self.f)
+            base_band = self.samples * intermediate
+
+            S = np.fft.fftshift(np.fft.fft(base_band))
             S_mag = np.abs(S)
             f_axis = np.arange(self.fs/-2, self.fs/2, self.fs/len(self.samples))
             if len(f_axis) > len(S_mag):
                 f_axis = f_axis[0:len(S_mag)]
 
             plt.plot(f_axis, S_mag)
+            plt.title("FFT at Baseband")
+            plt.xlabel("Frequency (Hz)")
+            plt.ylabel("Amplitude")
             plt.show()
 
+        elif type == "time":
+            t = 1/self.fs * np.arange(self.dur * self.fs)
+            t = t[0:len(self.samples)]
+
+            plt.plot(t, np.real(self.samples) / max(np.real(self.samples)))
+            plt.plot(t, np.imag(self.samples) / max(np.imag(self.samples)))
+            plt.title("Time View Signal")
+            plt.xlabel("Time (s)")
+            plt.ylabel("Amplitude")
+            plt.show()
+
+
         else:
-            raise ValueError("type must be one of 'specgram', 'psd', 'scatter', 'fft', 'constellation'")
+            raise ValueError("type must be one of 'specgram', 'psd', 'scatter', 'fft', 'constellation', 'time'")
 
     def save(self, fn=None):
         if not fn:
