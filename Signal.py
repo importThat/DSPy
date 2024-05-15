@@ -240,7 +240,6 @@ class Signal:
             plt.ylabel("Amplitude")
             plt.show()
 
-
         else:
             raise ValueError("type must be one of 'specgram', 'psd', 'scatter', 'fft', 'constellation', 'time'")
 
