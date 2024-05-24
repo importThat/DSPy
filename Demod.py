@@ -198,13 +198,14 @@ class Demod:
                   "nfft": nfft}
         Plot.plot(self.samples, **kwargs)
 
-    def time(self):
+    def time(self, n=0):
         t = 1 / self.fs * np.arange(self.dur * self.fs)
         t = t[0:len(self.samples)]
 
         kwargs = {"type": "time",
                   "t": t,
-                  "title": "Time Domain"}
+                  "title": "Time Domain",
+                  "n": n}
 
         Plot.plot(self.samples, **kwargs)
 

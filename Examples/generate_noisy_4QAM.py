@@ -90,7 +90,7 @@ t = t[0:len(s.samples)]
 # Next compute the angle. This comes from the equation:
 #   Signal = A * np.cos(2 * np.pi * f * t + theta) + A * 1j * np.sin(2 * np.pi * f * t + theta)
 # Here we're just interested in changing the theta bit by pi/4 (45 degrees)
-angle = 2 * np.pi * 0 * t + np.pi/4    # Add a 1300 hz offset
+angle = 2 * np.pi * 0 * t + np.pi/4    # Add a 45 degree phase offset
 phase_offset = np.cos(angle) + 1j * np.sin(angle)
 phase_offset = phase_offset.astype(np.complex64)
 
