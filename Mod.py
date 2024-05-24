@@ -1,10 +1,11 @@
+import os
 import numpy as np
-from matplotlib import pyplot as plt
 from time import time
 from Constellation import Constellation
+import Plot
 
 
-class Signal:
+class Mod:
     def __init__(self, f, fs, message, duration=1, amplitude=1):
         self.f = f              # Frequency of the signal
         self.fs = fs            # Sampling frequency/rate
@@ -15,10 +16,18 @@ class Signal:
         self.sps = int(self.dur * self.fs / len(self.message))  # Samples per symbol
 
         self.samples = None
+        self.fsk = False        # Flag for FSK because it behaves a bit differently
 
     def create_samples(self, freq, theta=0, amp=1):
         """
         Signal = A * np.cos(2 * np.pi * f * t + theta) + A * 1j * np.sin(2 * np.pi * f * t + theta)
+        where:
+            A = amplitude
+            f = frequency
+            t = a time vector of the times samples are taken
+            theta = a phase offset
+
+            (j is the programming term for i, the complex number)
         """
         t = 1/self.fs * np.arange(self.dur * self.fs)
 
@@ -34,7 +43,17 @@ class Signal:
         if type(amp) == np.ndarray:
             t = t[0:len(amp)]
 
-        z = amp * (np.cos(2 * np.pi * freq * t + theta) + 1j * np.sin(2 * np.pi * freq * t + theta))
+        # If there's no frequency (for example we just want to do a phase offset)
+        if freq is int:
+            if freq == 0:
+                z = amp * np.cos(theta) + 1j * amp * np.sin(theta)
+
+        else:
+            angle = 2 * np.pi * freq * t + theta
+
+            # equivalent to z = amp * np.exp(1j * (2 * np.pi * freq * t + theta))
+            z = amp * np.cos(angle) + 1j * amp * np.sin(angle)
+
         z = z.astype(np.complex64)
 
         return z
@@ -50,11 +69,6 @@ class Signal:
 
         self.samples = self.create_samples(freq=self.f, amp=amp_mod_z)
 
-
-        # self.samples = self.samples[0:len(amp_mod_z)]   # Trim so they are the same length
-        # self.samples = self.samples * amp_mod_z     # Apply the modulation
-        # self.samples = self.samples.astype(np.complex64)
-
     def FSK(self):
         """
         samples = A * e^i(2pi*f*t + theta)
@@ -67,9 +81,10 @@ class Signal:
         freqs = freqs * self.f
         f_mod_z = np.repeat(freqs, self.sps)
 
-        z = self.create_samples(freq=f_mod_z, theta=0)
+        z = self.create_samples(freq=f_mod_z, theta=0, amp=1)
 
         self.samples = z.astype(np.complex64)
+        self.fsk = True
 
     def PSK(self):
         """
@@ -83,12 +98,25 @@ class Signal:
         z = self.create_samples(freq=self.f, theta=p_mod_z)
         self.samples = z.astype(np.complex64)
 
-    def PSM(self):
+    def PSM(self, symbol_gaps, xmit_dur):
         """
         Pulse-spacing modulation, also pulse position modulation. Modulates signals by changing the time difference
-        between pulses
+        between pulses.
+        :param: symbol_gaps: The number of samples to be left between pulses for each symbol
         """
-        pass
+        # This creates more samples than we need
+        xmit_samps = self.create_samples(freq=self.f)
+        samps_needed = xmit_dur * self.fs
+        xmit_samps = xmit_samps[0:samps_needed]
+
+        output = xmit_samps.copy()
+
+        for symbol in self.message:
+            phrase = np.repeat(symbol, symbol_gaps[symbol]) # repeat for the appropriate length
+            phrase = phrase * 0+0j  # Make it complex and zero it
+            np.concatenate([output, phrase, xmit_samps])    # attach the pulse
+
+        self.samples = output
 
     def QPSK(self):
         """
@@ -113,7 +141,7 @@ class Signal:
 
     def QAM(self, type="square"):
         """
-        It's QAM! Creates the most ideal square QAM possible for the number of symbols supplied
+        It's QAM! Creates the most ideal square QAM possible for the number of symbols supplied and the type
         """
         # Create the constellation map - a lookup table of values that will be indexed by the message values
         c = Constellation(M=self.M)
@@ -122,6 +150,10 @@ class Signal:
             c.square()
         elif type == "sunflower":
             c.sunflower()
+        elif type == "star":
+            c.star()
+        elif type == "square_offset":
+            c.square_offset()
         else:
             raise ValueError("Incorrect Constellation type")
 
@@ -148,10 +180,11 @@ class Signal:
 
         """
 
-        # ** TO DO **
+        # TODO
         #   Change phase vector so it is always < 2pi
         #   To speed up computation, can precompute the phase offset per symbol
-        # ***
+        #   Make FM so it is around the carrier signal
+        #
         freqs = self.message + 1      # Add one to avoid zero frequency
         freqs = freqs / max(freqs)   # Normalize
         freqs = freqs * self.f
@@ -161,92 +194,107 @@ class Signal:
         delta_phi = 2.0 * f_mod_z * np.pi / self.fs    # Change in phase at every timestep (in radians per timestep)
         phi = np.cumsum(delta_phi)              # Add up the changes in phase
 
-        z = self.amp * np.exp(1j * phi)  # creates sinusoid at f Hz with theta phase shift
+        z = self.amp * np.exp(1j * phi)  # creates sinusoid theta phase shift
         z = np.array(z)
         z = z.astype(np.complex64)
 
         self.samples = z
+        self.fsk = True
 
-    def plot(self, type: str, nfft=1024):
+    def baseband(self):
+        """
+        Move the signal to baseband (0 frequency)
+        """
+        if self.fsk:
+            freq = (np.arange(self.M) + 1) / self.M
+            freq = np.mean(freq * self.f)
 
-        if type == "specgram":
-            intermediate = self.create_samples(freq=-1*self.f)
-            base_band = self.samples * intermediate
-
-            plt.specgram(base_band, NFFT=nfft, Fs=self.fs)
-            plt.title(f"Specgram at Baseband (NFFT={nfft})")
-            plt.ylabel("Frequency (Hz)")
-            plt.xlabel("Time (s)")
-            plt.show()
-
-        elif type == 'psd':
-            intermediate = self.create_samples(freq=-1*self.f)
-            base_band = self.samples * intermediate
-
-            plt.psd(base_band, NFFT=nfft, Fs=self.fs)
-            plt.title(f"PSD at Baseband (NFFT={nfft})")
-            plt.axhline(0, color='lightgray')  # x = 0
-            plt.axvline(0, color='lightgray')  # y = 0
-            plt.grid(True)
-            plt.show()
-
-        elif type == "scatter":
-            plt.scatter(self.samples.real[0:1000000], self.samples.imag[0:1000000])
-            plt.ylabel("Imaginary")
-            plt.xlabel("Real")
-            plt.title(f"Scatter at Intermediate (F={self.f})")
-            plt.axhline(0, color='lightgray')  # x = 0
-            plt.axvline(0, color='lightgray')  # y = 0
-            plt.show()
-
-        elif type == 'constellation':
-            intermediate = self.create_samples(freq=-1*self.f)
-            base_band = self.samples * intermediate
-
-            plt.scatter(base_band.real, base_band.imag)
-            plt.ylabel("Imaginary")
-            plt.xlabel("Real")
-            plt.title("Constellation at Baseband")
-            plt.axhline(0, color='lightgray')  # x = 0
-            plt.axvline(0, color='lightgray')  # y = 0
-            plt.xlim(-1.2, 1.2)
-            plt.ylim(-1.2, 1.2)
-            plt.show()
-
-        elif type == "fft":
-            intermediate = self.create_samples(freq=-1*self.f)
-            base_band = self.samples * intermediate
-
-            S = np.fft.fftshift(np.fft.fft(base_band))
-            S_mag = np.abs(S)
-            f_axis = np.arange(self.fs/-2, self.fs/2, self.fs/len(self.samples))
-            if len(f_axis) > len(S_mag):
-                f_axis = f_axis[0:len(S_mag)]
-
-            plt.plot(f_axis, S_mag)
-            plt.title("FFT at Baseband")
-            plt.xlabel("Frequency (Hz)")
-            plt.ylabel("Amplitude")
-            plt.show()
-
-        elif type == "time":
-            t = 1/self.fs * np.arange(self.dur * self.fs)
-            t = t[0:len(self.samples)]
-
-            plt.plot(t, np.real(self.samples) / max(np.real(self.samples)))
-            plt.plot(t, np.imag(self.samples) / max(np.imag(self.samples)))
-            plt.title("Time View Signal")
-            plt.xlabel("Time (s)")
-            plt.ylabel("Amplitude")
-            plt.show()
-
+            f = -1 * self.f + freq
+            offset = self.create_samples(freq=-1*freq)
         else:
-            raise ValueError("type must be one of 'specgram', 'psd', 'scatter', 'fft', 'constellation', 'time'")
+            offset = self.create_samples(freq=-1*self.f)
+        self.samples = self.samples * offset
+        self.f = 0
 
-    def save(self, fn=None):
+    def phase_offset(self, angle=40):
+        """
+        Adds a phase offset of x degrees to the signal
+        """
+        # degrees to radians
+        phase_offset = angle*np.pi / 180
+        phase_offset = self.create_samples(freq=0, theta=int(phase_offset))
+
+        self.samples = self.samples * phase_offset
+
+    def freq_offset(self, freq=1000):
+        """
+        Moves the signal up by some amount of Hz
+        """
+        freq_offset = self.create_samples(freq=freq, theta=0, amp=1)
+
+        self.samples = self.samples * freq_offset
+        self.f += freq
+        self.fsk = False    # stupid fsk...
+
+
+
+    def specgram(self, nfft=1024):
+        # Nfft shouldn't be bigger than the samples
+        if nfft >= len(self.samples):
+            nfft = int(len(self.samples)/4)
+
+        kwargs = {"type": "specgram",
+                "nfft": nfft,
+                "fs": self.fs,
+                "title": f"Specgram at Baseband (NFFT={nfft})"}
+
+        Plot.plot(self.samples, **kwargs)
+
+    def psd(self, nfft=1024):
+        kwargs = {"type": "psd",
+                  "nfft": nfft,
+                  "fs": self.fs,
+                  "title": f"PSD at Baseband (NFFT={nfft})"}
+        Plot.plot(self.samples, **kwargs)
+
+    def iq(self):
+        kwargs = {"type": "iq",
+                  "title": "IQ Scatter"}
+
+        Plot.plot(self.samples, **kwargs)
+
+    def fft(self, nfft=1024):
+        kwargs = {"type": "fft",
+                  "title": "FFT of Signal",
+                  "fs": self.fs,
+                  "nfft":nfft}
+        Plot.plot(self.samples, **kwargs)
+
+    def time(self, n=0):
+        t = 1 / self.fs * np.arange(self.dur * self.fs)
+        t = t[0:len(self.samples)]
+
+        kwargs = {"type": "time",
+                  "t": t,
+                  "title": "Time Domain",
+                  "n": n}
+
+        Plot.plot(self.samples, **kwargs)
+
+    def save(self, fn=None, path=None):
+        # If there is no path provided then provide one
+        if not path:
+            path = os.getcwd()
+            path = path.split("\\")     # I don't think this will work on non-windows?
+            dspy_index = path.index("DSPy")
+            path = '\\'.join(path[0:dspy_index+1]) + "\\" + "signals" + "\\"
+
+        # If no file name make one
         if not fn:
             fn = f"Sig_f={self.f}_fs={self.fs}_dur={self.dur}_{int(time())}"
-        self.samples.tofile(f"signals\\{fn}")
+
+        save_string = path + fn
+        self.samples.tofile(save_string)
 
 
 

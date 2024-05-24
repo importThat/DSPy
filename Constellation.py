@@ -2,6 +2,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import pdist
 
+# TODO
+#  Implement the constellations that haven't been made yet
+
 
 class Constellation:
     def __init__(self, M):
@@ -11,9 +14,8 @@ class Constellation:
 
     def square(self):
         """
-        Creates a square constellation that is trimmed down to the correct number of symbols
+        Creates a square constellation that can be trimmed down to the correct number of symbols
         """
-
         spacing = np.array([2 + 2j, -2 + 2j, -2 - 2j, 2 - 2j])      # How far the squares are away from each other
         c1 = [1 + 1j, -1 + 1j, -1 - 1j, 1 - 1j]     # The starting points
         const = c1.copy()
@@ -123,7 +125,6 @@ class Constellation:
         # Create the constellation
         self.map = np.concatenate([phases + i*phases for i in range(n_rings)])
 
-
     def rectangular(self):
         """
         Creates a rectangular constellation map. This form may be better than square if you're transmitting and odd
@@ -157,7 +158,7 @@ class Constellation:
 
         self.map = self.map / max_val
 
-    def plot(self):
+    def iq(self):
         """
         Plots the constellation
         """
