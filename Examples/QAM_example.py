@@ -9,7 +9,7 @@ Generate QAMs
 F = 1000
 
 # Create a random message of 1000 symbols with 256 levels
-MESSAGE = Utils.create_message(n=5000, m=1028)
+MESSAGE = Utils.create_message(n=5000, m=10208)
 
 SYMBOL_RATE = 250      # Symbols per second
 DUR = len(MESSAGE) / SYMBOL_RATE    # Message duration (in seconds)
@@ -30,8 +30,8 @@ s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 # The QAM method works with arbitrary numbers of unique symbols and will trim the constellation down to the correct
 # size. Try changing the m in the create_messages functions to any integer
 
-s.QAM(type="square")
-# s.QAM(type="sunflower")
+#s.QAM(type="square")
+s.QAM(type="sunflower")
 # s.QAM(type="star")
 # s.QAM(type="square_offset")     # AKA regular hexagon
 

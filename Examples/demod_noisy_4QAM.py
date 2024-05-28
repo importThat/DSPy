@@ -25,8 +25,8 @@ s.time()
 
 # You can see in the time view that the signal doesn't start at 0
 # We need to trim the excess from the signal
-#s.trim_by_power(padding=2, std_cut=5)      # TRIM FUNCTION CURRENTLY BROKEN :(
-s.samples = s.samples[62000:-62000]     # Trim by hand
+s.trim_by_power()
+# s.samples = s.samples[62000:-62000]     # Trim by hand
 
 # ********** Frequency and Phase offsets ************
 # Correct the frequency offsets

@@ -3,6 +3,8 @@ import numpy as np
 from time import time
 from Constellation import Constellation
 import Plot
+from scipy.io.wavfile import write
+from scipy import signal
 
 
 class Mod:
@@ -183,7 +185,7 @@ class Mod:
         # TODO
         #   Change phase vector so it is always < 2pi
         #   To speed up computation, can precompute the phase offset per symbol
-        #   Make FM so it is around the carrier signal
+        #
         #
         freqs = self.message + 1      # Add one to avoid zero frequency
         freqs = freqs / max(freqs)   # Normalize
@@ -196,9 +198,7 @@ class Mod:
 
         z = self.amp * np.exp(1j * phi)  # creates sinusoid theta phase shift
         z = np.array(z)
-        z = z.astype(np.complex64)
-
-        self.samples = z
+        self.samples = z.astype(np.complex64)
         self.fsk = True
 
     def baseband(self):
@@ -235,8 +235,6 @@ class Mod:
         self.samples = self.samples * freq_offset
         self.f += freq
         self.fsk = False    # stupid fsk...
-
-
 
     def specgram(self, nfft=1024):
         # Nfft shouldn't be bigger than the samples
@@ -281,7 +279,7 @@ class Mod:
 
         Plot.plot(self.samples, **kwargs)
 
-    def save(self, fn=None, path=None):
+    def save(self, fn=None, path=None, wav=False):
         # If there is no path provided then provide one
         if not path:
             path = os.getcwd()
@@ -294,7 +292,23 @@ class Mod:
             fn = f"Sig_f={self.f}_fs={self.fs}_dur={self.dur}_{int(time())}"
 
         save_string = path + fn
-        self.samples.tofile(save_string)
+
+        # If we're saving it as a wav
+        if wav:
+            if self.f == 0:
+                self.freq_offset(800)
+
+            audio = self.samples.real
+            # Target sample rate
+            sample_rate = 44100
+            audio = signal.resample_poly(audio, up=sample_rate, down=self.fs)
+
+            write(fn+".wave", sample_rate, audio.astype(np.float32))
+
+            self.baseband()
+
+        else:
+            self.samples.tofile(save_string)
 
 
 

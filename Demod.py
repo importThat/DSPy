@@ -10,7 +10,26 @@ Class with demod functions, ideally this is automated but very much still a work
 
 # TODO
 #  Refactor so demod and mod are children of a Signal class
-
+#  I imagine the following package structure:
+#  DS.py/
+#       __init__.py
+#       signal/
+#              __init__.py
+#              Signal
+#              Mod
+#              Demod
+#              Filter
+#       constellation/
+#              __init__.py
+#              Constellation
+#       Utils/
+#              __init__.py
+#              function1.py etc..
+#       Tests/
+#  Or something to that effect at least
+#  Update Readme
+#  Add license
+#  Add pyproject.toml
 
 class Demod:
     def __init__(self, filename, fs):
@@ -46,24 +65,22 @@ class Demod:
         max_val = max(max_imag, max_real)
         self.samples = (self.samples / max_val)
 
-    def trim_by_power(self, padding=10, std_cut = 8):
+    def trim_by_power(self, padding=0, std_cut=1.5, n=10):
         """
-        Trims the signal by looking at the power envelope. Adds a slight padding to each end to ensure we're
-        not losing data
+        Trims the signal by looking at the power envelope. Adds a slight padding to each end
+        :param padding: N sample padding either side of the cut
+        :param std_cut: Decide that the signal begins this many stds from the mean
+        :param n: The number for the moving average
         """
         # TODO
         #  Currently over trims!
-        # Find the power
-        power = abs(self.samples)
-        # We need to look for the first big spike and the last big spike
-        pwr_diff = np.gradient(power)
-        # the first big positive spike will be it turning on
-        sdev = np.std(pwr_diff)
-        av = np.mean(pwr_diff)
 
-        # N stds from mean
-        sdevs = (pwr_diff - av) / sdev
-        index = np.arange(len(sdevs))[abs(sdevs) > std_cut]
+        # If we do a moving average over the abs value of the samples (the abs value being the power!) we get a suuuper
+        # clear spike where the signal begins
+        av = np.convolve(np.abs(self.samples), np.ones(n), 'valid') / n
+        sdev = np.std(av)
+
+        index = np.arange(len(av))[abs(av) > std_cut*sdev]
 
         # first is the turn on (hopefully) last is turn off (hopefully)
         first_ind = index[0] - int(padding)
@@ -92,6 +109,12 @@ class Demod:
                 self.f = int(params[4])
             except:
                 raise ValueError("Capture does not appear to be in gqrx format")
+
+    def quadrature_demod(self):
+
+        delayed = np.conj(self.samples[1:])
+        self.samples = delayed * self.samples[:-1]  # Drops the last sample but w/e
+        self.samples = np.angle(self.samples)
 
     def move_freq(self, freq_offset):
         """
@@ -122,7 +145,7 @@ class Demod:
 
         # Take the fft to find the freq and sps spikes
         ffts = np.fft.fftshift(np.abs(np.fft.fft(samps)))
-        axis = np.arange(self.fs / -2, self.fs / 2, self.fs / len(self.samples))
+        axis = np.arange(self.fs / -2, self.fs / 2, self.fs / len(ffts))
 
         # Get indices of the 1 largest element, which will be the freq spike
         largest_inds = np.argpartition(ffts, -1)[-1:]
@@ -131,6 +154,9 @@ class Demod:
         # The frequency offset
         freq = largest_val / order
         freq = round(freq[0]) # Make an int
+
+        if len(axis) > len(ffts):
+            axis = axis[0:len(ffts)]
 
         plt.plot(axis, ffts)
 
