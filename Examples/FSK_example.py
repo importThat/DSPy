@@ -1,5 +1,5 @@
-from Mod import Mod
-import Utils
+from sig.Mod import Mod
+from util import Utils
 
 """
 Frequency shift keying example
@@ -29,7 +29,7 @@ while Fs <= F * 2:
 # Increase the symbol rate a bit so the FSK is easier to see
 Fs += SYMBOL_RATE * 2
 
-# Create the signal object with the given params
+# Create the sig object with the given params
 s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 
 # Apply the frequency shift keying
@@ -38,7 +38,7 @@ s.FSK()
 # We can then explore the wave using the plot functions
 # plot the first 400 samples in the time domain
 s.time(n=400)
-# You can see from the fft that the wave hasn't been filtered or shaped at all
+# You can see from the fft that the wave hasn't been filtered at all
 s.fft()
 
 # The wave is currently at 2000hz, we can baseband it with the baseband function
@@ -51,13 +51,13 @@ s.psd()
 s.specgram(nfft=1024)
 
 # the actual samples that we have generated can be explored
-# You can see that they are complex 64 type, which can be thought of as x, y coordinates
+# You can see that they are complex 64 type, which can be thought of as x, y coordinates (kind of)
 s.samples[0:20]
 
 # This sample can then be saved and transmitted with GNU-radio or the USRP python interface. Doing it either way
 # is very straightforward
 
-# I believe gnuradio and the usrp python api will mix your signal back up to the transmit frequency, but if not you can
+# I believe gnuradio and the usrp python api will mix your sig back up to the transmit frequency, but if not you can
 # apply a frequency shift with the freq_offset method
 s.freq_offset(freq=500)
 s.fft()

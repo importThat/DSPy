@@ -1,12 +1,12 @@
-import Filter
-import Utils
-from Mod import Mod
+from filter import Filter
+from util import Utils
+from sig.Mod import Mod
 import numpy as np
 
 """
-This program generates a 4-QAM (4-QPSK) and adds noise, a frequency offset, and a phase offset to the signal to
+This program generates a 4-QAM (4-QPSK) and adds noise, a frequency offset, and a phase offset to the sig to
 simulate travelling through a channel and is then saved. The program "demod_noisy_4QAM.py" steps through demodulating
-the signal
+the sig
 
 I suggest stepping through this line by line in a console
 """
@@ -30,7 +30,7 @@ Fs = SYMBOL_RATE
 while Fs <= F * 3:
     Fs += SYMBOL_RATE
 
-# Create the signal
+# Create the sig
 s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 
 # Apply QAM modulation
@@ -39,14 +39,14 @@ s.QAM(type="square")
 # Look at the spectrum
 s.fft()
 
-# we can see that the signal is entirely unfiltered and spreads throughout the spectrum. We should filter it down
+# we can see that the sig is entirely unfiltered and spreads throughout the spectrum. We should filter it down
 # to be a bit more polite!
 
 # Create a filter object with sps*10+1 taps (the magic number!)
-my_filter = Filter.Filter(num_taps=s.sps*10 + 1, fs=Fs)
+my_filter = Filter.Filter(num_taps=s.sps * 10 + 1, fs=Fs)
 # Create a finite infinite response filter
 my_filter.FIR(width=SYMBOL_RATE*2)
-# Apply the filter to the signal at the correct frequency
+# Apply the filter to the sig at the correct frequency
 s.samples = my_filter.apply(s.samples, f_shift=F)
 
 # The spectrum looks much cleaner now
@@ -61,7 +61,7 @@ s.iq()
 #                              PART TWO - SIMULATE CHANNEL INTERFERENCE
 
 # Add white gaussian noise. This is the "background noise of the universe" or some such. Just random noise that
-# effects the signal while it is propagating
+# effects the sig while it is propagating
 # Create the noise
 noise = Utils.AWGN(n=len(s.samples), power=0.02)
 # Add it in
@@ -70,7 +70,7 @@ s.samples = s.samples + noise
 # Note how the spots spread out a bit
 s.iq()
 
-# Add some noise at the start and the end of the signal to simulate a real capture
+# Add some noise at the start and the end of the sig to simulate a real capture
 noise_amount = int(0.2*len(noise))
 s.samples = np.concatenate([noise[0:noise_amount], s.samples, noise[0:noise_amount]])
 s.dur += 2*noise_amount/s.fs
@@ -94,20 +94,24 @@ angle = 2 * np.pi * 0 * t + np.pi/4    # Add a 45 degree phase offset
 phase_offset = np.cos(angle) + 1j * np.sin(angle)
 phase_offset = phase_offset.astype(np.complex64)
 
-# rotate the signal by the phase offset
+# rotate the sig by the phase offset
 s.samples = s.samples * phase_offset
+
+# (Alternatively just use the native phase_offset function - s.phase_offset(angle))
 
 # Note how the symbols have all rotated by 45 degrees (pi/4)
 s.iq()
 
 
 # Add a frequency offset
-angle = 2 * np.pi * 400 * t + 0    # Add a 400 hz offset
+freq = 2 * np.pi * 400 * t + 0    # Add a 400 hz offset
 # Create the wave
-offset = np.cos(angle) + 1j * np.sin(angle)
+offset = np.cos(freq) + 1j * np.sin(freq)
 offset = offset.astype(np.complex64)
 # Apply the frequency offset to the samples
 s.samples = s.samples * offset
+
+# (Alternatively just use the native freq_offset function - s.freq_offset(freq))
 
 # Note how we now have a circle, because the frequency offset is causing the IQ points to spin
 s.iq()

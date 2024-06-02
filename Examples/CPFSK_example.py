@@ -1,5 +1,5 @@
-from Mod import Mod
-import Utils
+from sig.Mod import Mod
+from util import Utils
 
 """
 Continuous Phase Frequency shift keying! This is FSK but with a phase offset applied to every sample to reduce
@@ -24,7 +24,7 @@ while Fs <= F * 2:
 # Increase the sample rate a bit so the CPFSK is easier to see
 Fs += SYMBOL_RATE * 100
 
-# Create the signal object with the given params
+# Create the sig object with the given params
 s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 
 # Apply the frequency shift keying

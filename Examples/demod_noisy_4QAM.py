@@ -1,41 +1,41 @@
-import Demod
+from sig import Demod
 import numpy as np
 from matplotlib import pyplot as plt
-from Constellation import Constellation
+from constellation.Constellation import Constellation
 
 """
-This file steps through demodulating a noisy signal. Run the "generate_noisy_4QAM.py" program first to create the signal
+This file steps through demodulating a noisy sig. Run the "generate_noisy_4QAM.py" program first to create the sig
 
 I suggest stepping through this line by line in a console
 """
 # Filename
 fn = "QAM_generated_m=4_fs=155000_sr=5000"
 
-# You will need to change this to point at the directory which contains the noisy QAM signal
-path = f"C:\\Users\\Justi\\Documents\\PythonProjects\\DSPy\\signals\\{fn}"
+# You will need to change this to point at the directory which contains the noisy QAM sig
+path = f"C:\\Users\\Justi\\Documents\\PythonProjects\\DSPy\\modulations\\{fn}"
 
 # Read in the file
 # (Change fs if you changed the sampling rate)
 s = Demod.Demod(filename=path, fs=155000)
 
-# # Look at the signal
+# # Look at the sig
 s.fft()
 s.iq()
 s.time()
 
-# You can see in the time view that the signal doesn't start at 0
-# We need to trim the excess from the signal
+# You can see in the time view that the sig doesn't start at 0
+# We need to trim the excess from the sig
 s.trim_by_power()
 # s.samples = s.samples[62000:-62000]     # Trim by hand
 
 # ********** Frequency and Phase offsets ************
 # Correct the frequency offsets
 
-# By raising the signal to the power of 4 we can see the frequency offset and the samples per symbol
+# By raising the sig to the power of 4 we can see the frequency offset and the samples per symbol
 freq_offset = s.exponentiate(order=4)
 
 # Move down by freq_offset
-s.move_freq(-1*freq_offset)
+s.freq_offset(-1*freq_offset)
 
 # from the exponentiate graph we can also see that our symbol rate is 5000 (6600 - 1600)
 # This means our samples per symbol is:
@@ -52,7 +52,7 @@ up=10
 s.resample(up=up, down=1)
 up_sps = int(sps * up)
 
-# We want to sample at the peak of the wave. This will correct small phase offsets and also reduce our signal down
+# We want to sample at the peak of the wave. This will correct small phase offsets and also reduce our sig down
 # to one sample per symbol
 # The magnitudes
 mags = []
@@ -73,8 +73,10 @@ n = mags.index(max(mags))
 # re-sample
 # Starting at a peak, get each symbol!
 s.samples = s.samples[n::int(up_sps)]
+s.retime()  # Re-time because we have dropped a bunch of samples
+s.iq()
 
-# Nice! It looks like a noisy signal
+# Nice! It looks like a noisy sig
 # Let's bring in a constellation map and get the message back
 c = Constellation(M=4)
 # Make the map
@@ -82,7 +84,7 @@ c.square()
 # normalise it
 c.normalise()
 
-# We need to normalise our signal so it's on the same scale as the constellation
+# We need to normalise our sig so it's on the same scale as the constellation
 s.normalise_pwr()
 
 # Show the points next to the qam

@@ -1,5 +1,5 @@
-from Mod import Mod
-import Utils
+from sig.Mod import Mod
+from util import Utils
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -25,7 +25,7 @@ Fs = SYMBOL_RATE
 while Fs <= F * 2:
     Fs += SYMBOL_RATE
 
-# Create the signal object with the given params
+# Create the sig object with the given params
 s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 
 # Apply the frequency shift keying
@@ -74,6 +74,7 @@ plt.plot(av_1[0:200])
 # Get the symbols out
 av_0 = np.round(av_0, 0).astype(np.int32)
 
+# Check the difference between the original message
 if np.all(MESSAGE==av_0):
     print("Message succesfully decoded")
 
