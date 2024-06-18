@@ -39,7 +39,6 @@ def plot(data, **kwargs):
         # Figure out the axis sizes
         ax_max = round(np.max(np.abs(data))) + 0.2
 
-
         plt.xlim(-1*ax_max, ax_max)
         plt.ylim(-1*ax_max, ax_max)
         plt.show()
