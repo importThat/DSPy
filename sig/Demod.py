@@ -17,12 +17,17 @@ Class with demod functions, ideally this is automated but very much still a work
 
 
 class Demod(Signal):
-    def __init__(self, filename, fs):
+    def __init__(self, fs, filename=None):
         self.fn = filename
-        samples = self.read_file()
 
-        if fs and (len(samples) > 0):
-            dur = len(samples) / fs
+        if filename:
+            samples = self.read_file()
+        else:
+            samples = np.array([])
+
+        if fs and filename:
+            if (len(samples) > 0):
+                dur = len(samples) / fs
         else:
             dur = None
 
