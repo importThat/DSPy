@@ -185,7 +185,8 @@ def crc(data, polynomial="16"):
                                                                         # meter rates
             "14": np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1]),  # Another data radio channel
             "15": np.array([1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1]),   # CAN, used to control ECUs
-            "16": np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])}
+            "16": np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+            }
 
     if type(polynomial) is str:
         try:
