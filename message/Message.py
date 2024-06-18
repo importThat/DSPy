@@ -2,7 +2,7 @@ import numpy as np
 from collections import Counter
 from collections import namedtuple
 from heapq import heapify, heappop, heappush
-import encode
+from message import encode
 
 """
 A class for handling the input, compression, and encoding of message data. Can read in and encode any file (although the
