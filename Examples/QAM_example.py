@@ -9,7 +9,7 @@ Generate QAMs
 F = 1000
 
 # Create a random message of n symbols with m levels
-MESSAGE = Utils.create_message(n=10000, m=5028)
+MESSAGE = Utils.create_message(n=10000, m=32)
 
 SYMBOL_RATE = 250      # Symbols per second
 DUR = len(MESSAGE) / SYMBOL_RATE    # Message duration (in seconds)
@@ -31,9 +31,9 @@ s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 # size. Try changing the m in the create_messages functions to any integer
 
 #s.QAM(type="square")
-s.QAM(type="sunflower")
+#s.QAM(type="sunflower")
 # s.QAM(type="star")
-# s.QAM(type="square_offset")     # AKA regular hexagon
+s.QAM(type="square_offset")     # AKA regular hexagon
 
 # Baseband the sig
 s.baseband()
