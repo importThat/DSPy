@@ -2,7 +2,7 @@ import numpy as np
 from collections import Counter
 from collections import namedtuple
 from heapq import heapify, heappop, heappush
-from message import encode
+from dsproc.message import encode
 
 """
 A class for handling the input, compression, and encoding of message data. Can read in and encode any file (although the
@@ -59,7 +59,7 @@ class Message:
 
     def symbolise(self, bits_per_symbol):
         """
-        Converts a message of bits to integer symbols.
+        Converts a message of bits to integer symbols,
         :return:
         """
         self.data = self.data.reshape([-1, bits_per_symbol])
