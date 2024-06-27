@@ -1,5 +1,5 @@
 import numpy as np
-from plot import Plot
+from dsproc.sig import plot
 from time import time
 import os
 from scipy.io.wavfile import write
@@ -132,27 +132,27 @@ class Signal:
                 "fs": self.fs,
                 "title": f"Specgram at Baseband (NFFT={nfft})"}
 
-        Plot.plot(self.samples, **kwargs)
+        plot.plot(self.samples, **kwargs)
 
     def psd(self, nfft=1024):
         kwargs = {"type": "psd",
                   "nfft": nfft,
                   "fs": self.fs,
                   "title": f"PSD at Baseband (NFFT={nfft})"}
-        Plot.plot(self.samples, **kwargs)
+        plot.plot(self.samples, **kwargs)
 
     def iq(self):
         kwargs = {"type": "iq",
                   "title": "IQ Scatter"}
 
-        Plot.plot(self.samples, **kwargs)
+        plot.plot(self.samples, **kwargs)
 
     def fft(self, nfft=1024):
         kwargs = {"type": "fft",
                   "title": "FFT of Signal",
                   "fs": self.fs,
                   "nfft":nfft}
-        Plot.plot(self.samples, **kwargs)
+        plot.plot(self.samples, **kwargs)
 
     def time(self, n=0):
         t = 1 / self.fs * np.arange(self.dur * self.fs)
@@ -163,7 +163,7 @@ class Signal:
                   "title": "Time Domain",
                   "n": n}
 
-        Plot.plot(self.samples, **kwargs)
+        plot.plot(self.samples, **kwargs)
 
     def save(self, fn=None, path=None, wav=False):
         # TODO
@@ -172,7 +172,7 @@ class Signal:
         if not path:
             path = os.getcwd()
             path = path.split("\\")     # I don't think this will work on non-windows?
-            dspy_index = path.index("DSPy")
+            dspy_index = path.index("dsproc")
             path = '\\'.join(path[0:dspy_index+1]) + "\\" + "modulations" + "\\"
 
         # If no file name make one
