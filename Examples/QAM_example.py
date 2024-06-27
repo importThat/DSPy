@@ -1,5 +1,4 @@
-from sig.Mod import Mod
-from util import Utils
+import dsproc
 
 """
 Generate QAMs
@@ -9,7 +8,7 @@ Generate QAMs
 F = 1000
 
 # Create a random message of n symbols with m levels
-MESSAGE = Utils.create_message(n=10000, m=32)
+MESSAGE = dsproc.utils.create_message(n=10000, m=32)
 
 SYMBOL_RATE = 250      # Symbols per second
 DUR = len(MESSAGE) / SYMBOL_RATE    # Message duration (in seconds)
@@ -21,7 +20,7 @@ while Fs <= F * 2:
     Fs += SYMBOL_RATE
 
 # Create the sig object with the given params
-s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 
 # There are a few different QAM types that are currently supported. Use the one that appeals to you.
 # the .QAM method generates a constellation map for the number of symbols provided and then applys that map

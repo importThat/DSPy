@@ -1,7 +1,7 @@
-from sig import Demod
 import numpy as np
+import dsproc
 from matplotlib import pyplot as plt
-from constellation.Constellation import Constellation
+from sig.constellation import Constellation
 
 """
 This file steps through demodulating a noisy sig. Run the "generate_noisy_4QAM.py" program first to create the sig
@@ -12,11 +12,11 @@ I suggest stepping through this line by line in a console
 fn = "QAM_generated_m=4_fs=155000_sr=5000"
 
 # You will need to change this to point at the directory which contains the noisy QAM sig
-path = f"C:\\Users\\Justi\\Documents\\PythonProjects\\DSPy\\modulations\\{fn}"
+path = f"C:\\Users\\Justi\\Documents\\PythonProjects\\dsproc\\modulations\\{fn}"
 
 # Read in the file
 # (Change fs if you changed the sampling rate)
-s = Demod.Demod(filename=path, fs=155000)
+s = dsproc.Demod(filename=path, fs=155000)
 
 # # Look at the sig
 s.fft()
@@ -78,7 +78,7 @@ s.iq()
 
 # Nice! It looks like a noisy sig
 # Let's bring in a constellation map and get the message back
-c = Constellation(M=4)
+c = dsproc.Constellation(M=4)
 # Make the map
 c.square()
 # normalise it

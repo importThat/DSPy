@@ -1,5 +1,4 @@
-from sig.Mod import Mod
-from util import Utils
+import dsproc
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -13,7 +12,7 @@ np.random.seed(50)
 F = 2000
 
 # 1000 symbols with 2 levels (so 1000 bits)
-MESSAGE = Utils.create_message(1000, 2)
+MESSAGE = dsproc.utils.create_message(1000, 2)
 print(f"Message bits {MESSAGE[0:20]}")
 
 SYMBOL_RATE = 250      # Symbols per second
@@ -26,7 +25,7 @@ while Fs <= F * 2:
     Fs += SYMBOL_RATE
 
 # Create the sig object with the given params
-s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 
 # Apply the frequency shift keying
 s.FSK()

@@ -1,5 +1,4 @@
-from sig.Mod import Mod
-from util import Utils
+import dsproc
 
 """
 Generate a QPSK sig
@@ -9,7 +8,7 @@ Generate a QPSK sig
 F = 1000
 
 # Create a random message of n symbols with m levels
-MESSAGE = Utils.create_message(n=2000, m=16)
+MESSAGE = dsproc.utils.create_message(n=2000, m=16)
 
 SYMBOL_RATE = 250      # Symbols per second
 DUR = len(MESSAGE) / SYMBOL_RATE    # Message duration (in seconds)
@@ -21,7 +20,7 @@ while Fs <= F * 2:
     Fs += SYMBOL_RATE
 
 # Create the sig object with the given params
-s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 
 s.QPSK()
 

@@ -1,5 +1,4 @@
-from sig.Mod import Mod
-from util import Utils
+import dsproc
 
 """
 Frequency shift keying example
@@ -15,7 +14,7 @@ F = 2000
 # 2 = "10"
 # 3 = "11" etc.
 # Create a random message of 100 symbols with 4 levels
-MESSAGE = Utils.create_message(100, 4)
+MESSAGE = dsproc.utils.create_message(100, 4)
 
 SYMBOL_RATE = 250      # Symbols per second
 DUR = len(MESSAGE) / SYMBOL_RATE    # Message duration (in seconds)
@@ -30,7 +29,7 @@ while Fs <= F * 2:
 Fs += SYMBOL_RATE * 2
 
 # Create the sig object with the given params
-s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 
 # Apply the frequency shift keying
 s.FSK()

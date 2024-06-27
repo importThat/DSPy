@@ -1,15 +1,13 @@
-from message.Message import Message
+from message.message import Message
 import numpy as np
-from sig.Mod import Mod
-from util.Utils import AWGN
-from sig.Demod import Demod
-from constellation.Constellation import Constellation
+import dsproc
+
 
 
 # *********************************** Encoding ***********************************************
 
 # Create the message and read in the data from the file
-message = Message(fn='test_file')
+message = dsproc.Message(fn='test_file')
 
 # compress the message, n is the block length
 prior_len = len(message.data)
@@ -46,7 +44,7 @@ Fs = SYMBOL_RATE
 while Fs <= F * 2:
     Fs += SYMBOL_RATE
 
-s = Mod(message=message.data, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(message=message.data, f=F, fs=Fs, duration=DUR, amplitude=1)
 
 s.QPSK()
 
@@ -56,13 +54,13 @@ s.baseband()
 
 # ****************************** Noise Sim ****************************************
 # Create some noise and add it into the signal
-noise = AWGN(n=len(s.samples), power=0.02)
+noise = dsproc.utils.AWGN(n=len(s.samples), power=0.02)
 # Add it in
 s.samples = s.samples + noise
 
 
 # ***************************** Demod ********************************************
-d = Demod(fs=F*2, filename=None)
+d = dsproc.Demod(fs=F*2, filename=None)
 d.samples = s.samples.copy()
 sent_message = message.data.copy()
 del s, message  # Cleanup
@@ -89,7 +87,7 @@ d.samples = d.samples[n::int(sps)]
 d.retime()
 
 # Do the demod
-c = Constellation(M=4)
+c = dsproc.Constellation(M=4)
 c.square()
 symbols = d.QAM(c)
 
@@ -108,7 +106,7 @@ del d
 
 # 1 - Map from symbols to bits
 # Because we sent the message we know the bit map
-message = Message(fn=None, data=symbols)
+message = dsproc.Message(fn=None, data=symbols)
 message.desymbolise(bits_per_symbol=2)
 
 # 2 - De-interleave the bits

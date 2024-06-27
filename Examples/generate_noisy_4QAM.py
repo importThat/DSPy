@@ -1,6 +1,4 @@
-from filter import Filter
-from util import Utils
-from sig.Mod import Mod
+import dsproc
 import numpy as np
 
 """
@@ -17,7 +15,7 @@ np.random.seed(42)  # Set the seed for reproducibility
 
 F = 50000   # Intermediate
 M = 4   # The number of unique symbols
-MESSAGE = Utils.create_message(n=10000, m=M)  # Message symbols
+MESSAGE = dsproc.utils.create_message(n=10000, m=M)  # Message symbols
 # Print a sample of the message
 print(MESSAGE[0:50])
 
@@ -31,7 +29,7 @@ while Fs <= F * 3:
     Fs += SYMBOL_RATE
 
 # Create the sig
-s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 
 # Apply QAM modulation
 s.QAM(type="square")
@@ -43,7 +41,7 @@ s.fft()
 # to be a bit more polite!
 
 # Create a filter object with sps*10+1 taps (the magic number!)
-my_filter = Filter.Filter(num_taps=s.sps * 10 + 1, fs=Fs)
+my_filter = dsproc.Filter(num_taps=s.sps * 10 + 1, fs=Fs)
 # Create a finite infinite response filter
 my_filter.FIR(width=SYMBOL_RATE*2)
 # Apply the filter to the sig at the correct frequency
@@ -63,7 +61,7 @@ s.iq()
 # Add white gaussian noise. This is the "background noise of the universe" or some such. Just random noise that
 # effects the sig while it is propagating
 # Create the noise
-noise = Utils.AWGN(n=len(s.samples), power=0.02)
+noise = dsproc.utils.AWGN(n=len(s.samples), power=0.02)
 # Add it in
 s.samples = s.samples + noise
 

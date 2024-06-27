@@ -1,5 +1,4 @@
-from sig.Mod import Mod
-from util import Utils
+import dsproc
 
 """
 Continuous Phase Frequency shift keying! This is FSK but with a phase offset applied to every sample to reduce
@@ -10,7 +9,7 @@ instantaneous phase transitions
 F = 2000
 
 # Our message in symbol form. In this example we have 4 symbols, so each symbol would typically represent 2 bits
-MESSAGE = Utils.create_message(5000, 8)
+MESSAGE = dsproc.utils.create_message(5000, 8)
 
 SYMBOL_RATE = 500      # Symbols per second
 DUR = len(MESSAGE) / SYMBOL_RATE    # Message duration (in seconds)
@@ -25,7 +24,7 @@ while Fs <= F * 2:
 Fs += SYMBOL_RATE * 100
 
 # Create the sig object with the given params
-s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 
 # Apply the frequency shift keying
 s.CPFSK()

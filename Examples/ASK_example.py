@@ -1,4 +1,4 @@
-from sig.Mod import Mod
+import dsproc
 
 """
 Amplitude shift keying example
@@ -25,7 +25,7 @@ while Fs <= F * 2:
     Fs += SYMBOL_RATE
 
 # Create the sig object with the given params
-s = Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
 
 # Apply the amplitude shift keying
 s.ASK()
