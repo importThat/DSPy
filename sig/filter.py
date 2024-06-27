@@ -1,6 +1,6 @@
 from scipy import signal
 from matplotlib import pyplot as plt
-from plot import Plot
+from dsproc.sig import plot
 import numpy as np
 
 
@@ -36,7 +36,7 @@ class Filter:
         kwargs = {"type": "fft",
                   "title": "FFT of Signal",
                   "fs": self.fs}
-        Plot.plot(self.taps, **kwargs)
+        plot.plot(self.taps, **kwargs)
 
     def apply(self, signal: np.ndarray, f_shift: int=0):
         """

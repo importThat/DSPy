@@ -1,6 +1,6 @@
 import numpy as np
-from constellation.Constellation import Constellation
-from sig.Signal import Signal
+from dsproc.sig.constellation import Constellation
+from dsproc.sig._sig import Signal
 
 
 class Mod(Signal):

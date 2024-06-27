@@ -1,19 +1,13 @@
 import numpy as np
-from plot import Plot
 from matplotlib import pyplot as plt
-from scipy import signal
-from sig.Signal import Signal
+from dsproc.sig._sig import Signal
+from scipy.cluster.vq import kmeans
+from dsproc.sig.constellation import Constellation
 
 """
 Class with demod functions, ideally this is automated but very much still a work in progress
 
 """
-
-# TODO
-#  Update Readme
-#  Add license
-#  Add pyproject.toml
-#  Add Multiple access functionality
 
 
 class Demod(Signal):
@@ -92,6 +86,83 @@ class Demod(Signal):
                 self.f = int(params[4])
             except:
                 raise ValueError("Capture does not appear to be in gqrx format")
+
+    def detect_clusters(self, M, iter=3):
+        """
+        Detects M clusters of points in the demod samples. Returns a constellation object with the guessed cluster data
+        which can then be used to map to symbols
+        :param M: A guess at the number of clusters
+        :param iter: The number of times to run the kmeans algorithm
+        :return: A constellation object with the cluster data
+        """
+        if M < 0 or type(M) != int or M > len(self.samples):
+            raise ValueError("M must be an integer > 0 and less than the number of samples available")
+
+        # The points to cluster
+        points = np.array([self.samples.real, self.samples.imag])
+        points = points.T
+
+        # create the clusters
+        clusters = kmeans(points, M, iter=iter)
+        # Put the cluster points into the shape that constellation objects expect array([1+1j, ...]
+        cluster_points = np.array(clusters[0])
+        cluster_points = np.array([i[0]+1j*i[1] for i in cluster_points])
+
+        # Create a constellation object with the clusters
+        c = Constellation(M=M)
+        c.map = cluster_points
+
+        return c
+
+    def view_constellation(self, c, samples=2000):
+        """
+        Plots the map from the given constellation against the demod samples and allows you to click and change the
+        constellation points
+        :param c: a constellation object
+        :param samples: the number of samples to view from the demod data. Randomly selected
+        """
+        fig, ax = plt.subplots()
+        background_data = np.random.choice(self.samples, size=samples, replace=False)
+        background = ax.scatter(background_data.real, background_data.imag, color="blue")
+        art = ax.scatter(c.map.real, c.map.imag, picker=True, pickradius=6, color="orange")
+
+        # A FUNCTION IN A FUNCTION!??? Utter savage!
+        # (It makes the scoping easier)
+        def onclick(event):
+            #global c
+            if event.button == 1:
+                new_point = np.array([event.xdata + 1j*event.ydata])
+                c.map = np.concatenate([c.map, new_point])
+
+                # Add the new point in
+                arr = np.array([c.map.real, c.map.imag]).T
+                art.set_offsets(arr)
+                plt.draw()
+
+        def onpick(event):
+            #global c
+
+            if event.mouseevent.button == 3:  # If it's a right mouse click
+                ind = event.ind
+                # Only get the closest point
+                if len(ind) > 1:
+                    del_point = np.array([event.mouseevent.xdata + 1j*event.mouseevent.ydata])
+
+                    # Find the index of the nearest point
+                    test_points = c.map[ind]
+                    best_ind = (np.abs(test_points - del_point)).argmin()
+                    ind = ind[best_ind]
+
+                c.map = np.delete(c.map, ind, axis=0)
+
+                # add the point in
+                arr = np.array([c.map.real, c.map.imag]).T
+                art.set_offsets(arr)
+                plt.draw()
+
+        cid = fig.canvas.mpl_connect('button_press_event', onclick)
+        cid = fig.canvas.mpl_connect('pick_event', onpick)
+        plt.show()
 
     def quadrature_demod(self):
 
