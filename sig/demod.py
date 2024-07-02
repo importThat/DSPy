@@ -131,13 +131,16 @@ class Demod(Signal):
         def onclick(event):
             #global c
             if event.button == 1:
-                new_point = np.array([event.xdata + 1j*event.ydata])
-                c.map = np.concatenate([c.map, new_point])
+                if event.xdata and event.ydata:
+                    new_point = np.array([event.xdata + 1j*event.ydata])
+                    c.map = np.concatenate([c.map, new_point])
 
-                # Add the new point in
-                arr = np.array([c.map.real, c.map.imag]).T
-                art.set_offsets(arr)
-                plt.draw()
+                    # Add the new point in
+                    arr = np.array([c.map.real, c.map.imag]).T
+                    art.set_offsets(arr)
+
+                    plt.draw()
+
 
         def onpick(event):
             #global c
