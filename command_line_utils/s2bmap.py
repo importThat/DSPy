@@ -1,5 +1,4 @@
 import sys
-sys.path.insert(0, "C:\\Users\\Justi\\Documents\\PythonProjects")
 import dsproc
 import numpy as np
 from math import factorial
