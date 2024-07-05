@@ -46,6 +46,7 @@ bps =int(np.ceil(log(n_points, 2)))
 
 bits = symbol_to_bit(out, bits_per_symbol=bps)
 bits = bits.astype(np.uint8)
+bits = np.packbits(bits, axis=-1)
 
 fn = file + ".bits"
 

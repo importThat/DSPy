@@ -17,7 +17,7 @@ if len(variables) <= 3:
     print("\n")
     print("s2bmap file pattern bits_per_symbol\n")
 
-    print("file -> The file to be symbol to bit mapped")
+    print("file -> The file to be symbol to bit mapped. A bytes unsigned integer 8 bytes file")
 
     print("pattern -> The known pattern which is used to construct the symbol to bit map. Can be a string of binary, a"
           "bit file of type uint8 ora pointer to a text file containing the pattern. Note that the text document must "
@@ -45,8 +45,8 @@ if type(file) != str:
 if type(bits_per_symbol) != int:
     raise ValueError("bits_per_symbol must be an integer")
 
-if bits_per_symbol > 8:
-    raise Warning("Large QAMS (8+ bits per symbol) may take a long time. Good luck!")
+if bits_per_symbol > 9:
+    raise Warning("Large QAMS (9+ bits per symbol) may take a long time. Good luck!")
 
 # Figure out the pattern
 if set(pattern) == set("10"):   # If it's binary
