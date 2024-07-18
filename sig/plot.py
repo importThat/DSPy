@@ -77,5 +77,20 @@ def plot(data, **kwargs):
         plt.ylabel("Amplitude")
         plt.show()
 
+    elif kwargs['type'] == "view":
+        env = None
+        if kwargs['subtype'] == "phase":
+            env = np.angle(data)
+
+        elif kwargs['subtype'] == 'amp':
+            env = np.abs(data)
+
+        elif kwargs['subtype'] == 'freq':
+            phase = np.unwrap(np.angle(data))
+            env = np.diff(phase) / (2*np.pi) * kwargs['fs']
+
+        plt.plot(env)
+
+
 
 
