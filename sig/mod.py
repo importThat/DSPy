@@ -88,7 +88,7 @@ class Mod(Signal):
 
         self.samples = z.astype(np.complex64)
 
-    def QAM(self, type="square"):
+    def QAM(self, type="square", custom_map=None):
         """
         It's QAM! Creates the most ideal square QAM possible for the number of symbols supplied and the type
         """
@@ -103,6 +103,11 @@ class Mod(Signal):
             c.star()
         elif type == "square_offset":
             c.square_offset()
+        elif type == "custom":
+            if custom_map is None:
+                raise ValueError("Provide a custom constellation map in the custom_map argument")
+            else:
+                c.map = custom_map
         else:
             raise ValueError("Incorrect Constellation type")
 
@@ -117,15 +122,18 @@ class Mod(Signal):
 
         self.samples = z
 
-    def CPFSK(self):
+    def CPFSK(self, squish_factor=20):
         """
         samples = A * e^i(2pi*f*t + theta)
 
         Continuous phase frequency shift keying. Uses a phase offset vector to minimise phase jumps arising
         from frequency shift keying, which makes it more spectrally efficient.
 
+        The squish factor squishes the frequencies together. The higher the squish the closer together they are.
+
         resource:
         https://dsp.stackexchange.com/questions/80768/fsk-modulation-with-python
+
 
         """
 
@@ -133,7 +141,7 @@ class Mod(Signal):
         #   Change phase vector so it is always < 2pi
         #   To speed up computation, can precompute the phase offset per symbol
         #
-        freqs = self.message + 1      # Add one to avoid zero frequency
+        freqs = self.message + squish_factor      # The larger the number added here to more the frequencies are pushed together
         freqs = freqs / max(freqs)   # Normalize
         freqs = freqs * self.f
         f_mod_z = np.repeat(freqs, self.sps)     # FSK message
@@ -141,6 +149,49 @@ class Mod(Signal):
         # Cumulative phase offset
         delta_phi = 2.0 * f_mod_z * np.pi / self.fs    # Change in phase at every timestep (in radians per timestep)
         phi = np.cumsum(delta_phi)              # Add up the changes in phase
+
+        z = self.amp * np.exp(1j * phi)  # creates sinusoid theta phase shift
+        z = np.array(z)
+        self.samples = z.astype(np.complex64)
+        self.fsk = True
+
+    def CPFSK_smoother(self, squish_factor=20, smooth_factor=1):
+        """
+        samples = A * e^i(2pi*f*t + theta)
+
+        Continuous phase frequency shift keying. Uses a phase offset vector to minimise phase jumps arising
+        from frequency shift keying, which makes it more spectrally efficient.
+
+        The squish factor squishes the frequencies together. The higher the squish the closer together they are.
+
+        Smooth factor determines over how many samples the frequencies will be smoothed. 1 is 100% of the samples
+        and 0 is 0% of the samples. There is some rounding that occurs, so for smaller samples-per-second symbols
+        the effect will be noticeably stepped.
+
+        resource:
+        https://dsp.stackexchange.com/questions/80768/fsk-modulation-with-python
+        """
+
+        #
+        freqs = self.message + squish_factor  # The larger the number added here to more the frequencies are pushed together
+        freqs = freqs / max(freqs)  # Normalize
+        freqs = freqs * self.f
+        f_mod_z = np.repeat(freqs, self.sps)  # FSK message
+
+        # Now we pass an averaging window over the frequencies. This will ensure we slowly transition from one
+        # frequency to the next.
+        # I guess we just do it linearly
+        f_smooth = np.cumsum(f_mod_z)
+        if smooth_factor == 0:
+            sn = 1
+        else:
+            sn = max(1, int((self.sps / (1/smooth_factor))))
+        f_smooth[sn:] = f_smooth[sn:] - f_smooth[:-sn]
+        f_smooth = f_smooth[sn - 1:] / sn
+
+        # Cumulative phase offset
+        delta_phi = 2.0 * f_smooth * np.pi / self.fs  # Change in phase at every timestep (in radians per timestep)
+        phi = np.cumsum(delta_phi)  # Add up the changes in phase
 
         z = self.amp * np.exp(1j * phi)  # creates sinusoid theta phase shift
         z = np.array(z)
