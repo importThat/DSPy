@@ -394,6 +394,6 @@ class Symbol2bit:
                 s2b_text += z
             s2b_text += "}\n"
 
-        print(f"Saving symbol to bit maps as {fn+"_s2b_maps.txt"}")
+        print(f"Saving symbol to bit maps as {fn}_s2b_maps.txt")
         with open(f"{fn}_s2b_maps.txt", "w") as f:
             f.writelines(s2b_text)

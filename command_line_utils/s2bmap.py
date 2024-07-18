@@ -70,6 +70,7 @@ if set(pattern) != set(np.array([1, 0])):
 
 print(f"Reading file {file}")
 bits = np.fromfile(file, dtype=np.uint8)
+bits = np.unpackbits(bits, axis=-1)
 
 # Create the mapper object
 mapper = dsproc.Symbol2bit(pattern=pattern, bits_per_symbol=bits_per_symbol)
