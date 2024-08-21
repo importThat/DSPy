@@ -6,3 +6,4 @@ from dsproc.message import encode
 from dsproc.util import utils
 from dsproc.sig.filter import Filter
 from dsproc.message.symbol2bit import Symbol2bit
+from dsproc.util.spec_art import SpectrumPainter
