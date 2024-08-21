@@ -7,21 +7,32 @@ from scipy import signal
 
 
 class Signal:
-    def __init__(self, f, fs, message, duration, amplitude):
-        self.f = f
+    def __init__(self, fs, message, sps=2, amplitude=1, f=100):
+        # Sampling frequency
         self.fs = fs
+        # Message as an array of symbols
         self.message = message
-        self.dur = duration
+        # Samples per symbol
+        self.sps = sps
+        # Intermediate frequency
+        self.f = f
+        # Mas amplitude of signal
         self.amp = amplitude
-        self.M = len(np.unique(self.message))  # The number of symbols
-
-        if len(message) > 0:
-            self.sps = int(self.dur * self.fs / len(self.message))  # Samples per symbol
-        else:
-            self.sps = None
 
         self.samples = None
         self.fsk = False
+
+    @property
+    def dur(self):
+        return self.sps * len(self.message) / self.fs
+
+    @property
+    def M(self):
+        return len(np.unique(self.message))  # The number of symbols
+
+    @property
+    def t(self):
+        return 1 / self.fs * np.arange(self.dur * self.fs)
 
     def create_samples(self, freq, theta=0, amp=1):
         """
@@ -34,8 +45,9 @@ class Signal:
 
             (j is the programming term for i, the complex number)
         """
-        t = 1 / self.fs * np.arange(self.dur * self.fs)
         z = np.ndarray([])
+        # Create a copy of t, because we may need to alter it
+        t = self.t.copy()
 
         # If we're supplying a frequency vector (for FSK) then the length might not be compatible with t
         if type(freq) == np.ndarray:
@@ -58,6 +70,7 @@ class Signal:
             angle = 2 * np.pi * freq * t + theta
 
             # equivalent to z = amp * np.exp(1j * (2 * np.pi * freq * t + theta))
+            # but this way is faster
             z = amp * np.cos(angle) + 1j * amp * np.sin(angle)
 
         z = z.astype(np.complex64)
@@ -75,18 +88,11 @@ class Signal:
             freq = (np.arange(self.M) + 1) / self.M
             freq = np.mean(freq * self.f)
 
-            f = -1 * self.f + freq
             offset = self.create_samples(freq=-1*freq)
         else:
             offset = self.create_samples(freq=-1*self.f)
         self.samples = self.samples * offset
         self.f = 0
-
-    def retime(self):
-        """
-        Recalculates the duration of the message
-        """
-        self.dur = len(self.samples)/self.fs
 
     def phase_offset(self, angle=40):
         """
@@ -111,13 +117,14 @@ class Signal:
         else:
             self.f = freq
 
-        self.fsk = False    # stupid fsk...
+        self.fsk = False
 
     def resample(self, up=16, down=1):
         """
         A simple wrapper for scipy's resample
         """
         self.samples = signal.resample_poly(self.samples, up, down)
+        self.fs = int(self.fs * up/down)
 
     def efficiency(self):
         """
@@ -137,11 +144,44 @@ class Signal:
         power = np.sum(np.abs(filtered))
         return power
 
+    def highpass(self, f):
+        """
+        Applies a high pass filter at the given frequency. A high pass filter removes frequencies below the given level
+        and allows frequencies above the given level through.
+        """
+        sos = signal.butter(10, f, 'highpass', fs=self.fs, output='sos')
+        self.samples = signal.sosfilt(sos, self.samples)
+
+    def lowpass(self, f):
+        """
+        Applies a low pass filter at the given frequency. A low pass filter removes frequencies above the given level
+        and allows frequencies below the given level through.
+        """
+        sos = signal.butter(10, f, 'lowpass', fs=self.fs, output='sos')
+        self.samples = signal.sosfilt(sos, self.samples)
+
+    def bandpass(self, f_low, f_high):
+        """
+        Applies a bandpass filter around the given frequencies. This filter removes frequencies below f_low and above
+        f_high, only returning those in the given band.
+        """
+        sos = signal.butter(10, (f_low, f_high), 'bandpass', fs=self.fs, output='sos')
+        self.samples = signal.sosfilt(sos, self.samples)
+
+    def bandstop(self, f_low, f_high):
+        """
+        Applies a bandstop filter between the given frequencies. This filter removes frequencies between f_low
+        and f_high.
+        """
+        sos = signal.butter(10, (f_low, f_high), 'bandstop', fs=self.fs, output='sos')
+        self.samples = signal.sosfilt(sos, self.samples)
+
+
     # ***********************************                    ************************************
     # ************************************ Plotting Functions ************************************
     # *************************************                    ************************************
 
-    def phase_view(self, n=10000, start_sample=0):
+    def phase_view(self, n=4000000, start_sample=0):
         """
         Plots the instantaneous phase of the signal
         """
@@ -151,7 +191,7 @@ class Signal:
             }
         plot.plot(self.samples[start_sample:start_sample+n], **kwargs)
 
-    def freq_view(self, n=10000, start_sample=0):
+    def freq_view(self, n=4000000, start_sample=0):
         """
         Plots the instantaneous frequency of the signal
         """
@@ -162,7 +202,7 @@ class Signal:
             }
         plot.plot(self.samples[start_sample:start_sample+n], **kwargs)
 
-    def amp_view(self, n=10000, start_sample=0):
+    def amp_view(self, n=4000000, start_sample=0):
         """
         Plots the instantaneous amplitude of the signal
         """
@@ -205,7 +245,7 @@ class Signal:
         plot.plot(self.samples, **kwargs)
 
     def time(self, n=0):
-        t = 1 / self.fs * np.arange(self.dur * self.fs)
+        t = self.t
         t = t[0:len(self.samples)]
 
         kwargs = {"type": "time",
@@ -223,13 +263,14 @@ class Signal:
             path = os.getcwd()
             path = path.split("\\")     # I don't think this will work on non-windows?
             dspy_index = path.index("dsproc")
-            path = '\\'.join(path[0:dspy_index+1]) + "\\" + "modulations" + "\\"
+            path = '\\'.join(path[0:dspy_index+1]) + "\\" + "modulations"
 
         # If no file name make one
         if not fn:
             fn = f"Sig_f={self.f}_fs={self.fs}_dur={self.dur}_{int(time())}"
 
-        save_string = path + fn
+        save_string = path + "\\" + fn
+
 
         # If we're saving it as a wav
         if wav:
