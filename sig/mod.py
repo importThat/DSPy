@@ -1,11 +1,12 @@
 import numpy as np
 from dsproc.sig.constellation import Constellation
 from dsproc.sig._sig import Signal
+from dsproc.util.utils import moving_average
 
 
 class Mod(Signal):
-    def __init__(self, f, fs, message, duration=1, amplitude=1):
-        super().__init__(f=f, fs=fs, message=message, duration=duration, amplitude=amplitude)
+    def __init__(self, fs, message, sps=2, amplitude=1, f=100):
+        super().__init__(fs=fs, message=message, sps=sps, amplitude=amplitude, f=f)
 
     def ASK(self):
         """
@@ -48,8 +49,10 @@ class Mod(Signal):
         self.samples = z.astype(np.complex64)
 
     def PSM(self, symbol_gaps, xmit_dur):
+        # TODO
+        #   Fix this function to make it more useable
         """
-        Pulse-spacing modulation, also pulse position modulation. Modulates modulations by changing the time difference
+        Pulse-spacing modulation, also pulse position modulation. Modulates the wave by changing the time difference
         between pulses.
         :param: symbol_gaps: The number of samples to be left between pulses for each symbol
         """
@@ -155,7 +158,7 @@ class Mod(Signal):
         self.samples = z.astype(np.complex64)
         self.fsk = True
 
-    def CPFSK_smoother(self, squish_factor=20, smooth_factor=1):
+    def CPFSK_smoother(self, squish_factor=20, smooth_n=10, weights=None):
         """
         samples = A * e^i(2pi*f*t + theta)
 
@@ -164,15 +167,12 @@ class Mod(Signal):
 
         The squish factor squishes the frequencies together. The higher the squish the closer together they are.
 
-        Smooth factor determines over how many samples the frequencies will be smoothed. 1 is 100% of the samples
-        and 0 is 0% of the samples. There is some rounding that occurs, so for smaller samples-per-second symbols
-        the effect will be noticeably stepped.
+        Smooth_n determines over how many samples the frequencies will be smoothed. This is how wide the moving average
+        window is
 
         resource:
         https://dsp.stackexchange.com/questions/80768/fsk-modulation-with-python
         """
-
-        #
         freqs = self.message + squish_factor  # The larger the number added here to more the frequencies are pushed together
         freqs = freqs / max(freqs)  # Normalize
         freqs = freqs * self.f
@@ -180,23 +180,33 @@ class Mod(Signal):
 
         # Now we pass an averaging window over the frequencies. This will ensure we slowly transition from one
         # frequency to the next.
-        # I guess we just do it linearly
-        f_smooth = np.cumsum(f_mod_z)
-        if smooth_factor == 0:
-            sn = 1
+
+        # Test smooth_n argument
+        if smooth_n <= 0:
+            smooth_n = 1
+        if smooth_n > self.sps:
+            raise ValueError("smooth_n should not be greater than the samples per symbol")
+
+        # Creating the smoothing window
+        if weights is None:
+            window = np.ones(smooth_n)
         else:
-            sn = max(1, int((self.sps / (1/smooth_factor))))
-        f_smooth[sn:] = f_smooth[sn:] - f_smooth[:-sn]
-        f_smooth = f_smooth[sn - 1:] / sn
+            window = np.array(weights)
+
+        if smooth_n != len(window):
+            raise ValueError("weights must have the same length as smooth_n")
+
+        ma = moving_average(f_mod_z, smooth_n, weights=window)
 
         # Cumulative phase offset
-        delta_phi = 2.0 * f_smooth * np.pi / self.fs  # Change in phase at every timestep (in radians per timestep)
+        delta_phi = 2.0 * ma * np.pi / self.fs  # Change in phase at every timestep (in radians per timestep)
         phi = np.cumsum(delta_phi)  # Add up the changes in phase
 
         z = self.amp * np.exp(1j * phi)  # creates sinusoid theta phase shift
         z = np.array(z)
         self.samples = z.astype(np.complex64)
         self.fsk = True
+
 
 
 
