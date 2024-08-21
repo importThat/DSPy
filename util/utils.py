@@ -71,3 +71,36 @@ def rre(matrix):
     return out
 
 
+def moving_average(x, n, weights=None):
+    if weights is None:
+        window = np.ones(n)
+    else:
+        window = np.array(weights)
+
+    return np.convolve(x, window, 'valid') / n
+
+
+def markify(symbols):
+    """
+    Given some symbols returns an array of the pattern of the symbol occurences
+    """
+    index = np.arange(len(symbols))
+    output = None
+
+    for i in range(len(symbols)):
+        marker = index[symbols == symbols[i]]
+        if output is None:
+            output = marker
+        else:
+            output = np.concatenate([output, marker])
+
+    return output
+
+
+def create_wave(t, f, amp, phase):
+    angle = 2 * np.pi * f * t + phase
+    wave = amp * np.cos(angle) + 1j * amp * np.sin(angle)
+
+    return wave.astype(np.complex64)
+
+
