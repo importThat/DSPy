@@ -7,6 +7,7 @@ from random import shuffle
 from math import factorial
 
 
+
 class Symbol2bit:
     def __init__(self, pattern, bits_per_symbol):
         self.number_of_possible_maps = None     # a deduced count of all the possible maps
@@ -88,22 +89,6 @@ class Symbol2bit:
 
         return bits
 
-    def markify(self, symbols):
-        """
-        Given some symbols returns an array of the pattern of the symbol occurences
-        """
-        index = np.arange(len(symbols))
-        output = None
-
-        for i in range(len(symbols)):
-            marker = index[symbols == symbols[i]]
-            if output is None:
-                output = marker
-            else:
-                output = np.concatenate([output, marker])
-
-        return output
-
     def markify_cuts(self):
         """
         Changes the cut symbols into markers
@@ -112,7 +97,7 @@ class Symbol2bit:
 
         for j in range(len(self.cuts)):
             symbols = self.cuts[j]
-            marks.append(self.markify(symbols))
+            marks.append(dsproc.utils.markify(symbols))
 
         self.cut_patterns = marks
 
@@ -134,7 +119,7 @@ class Symbol2bit:
 
             # Go through the message and test each symbol chunk to see if it follows the same pattern as the marker
             for j in range(0, len(self.message.data)):
-                test = self.markify(self.message.data[j:j + symbols_length])
+                test = dsproc.utils.markify(self.message.data[j:j + symbols_length])
 
                 # If they're the same length then it's a possible match
                 if len(test) == marker_len:
