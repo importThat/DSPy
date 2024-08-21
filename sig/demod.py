@@ -13,21 +13,12 @@ Class with demod functions, ideally this is automated but very much still a work
 class Demod(Signal):
     def __init__(self, fs, filename=None):
         self.fn = filename
+        super().__init__(f=0, fs=fs, message=[], amplitude=1)
 
         if filename:
-            samples = self.read_file()
+            self.samples = self.read_file()
         else:
-            samples = np.array([])
-
-        if fs and filename:
-            if (len(samples) > 0):
-                dur = len(samples) / fs
-        else:
-            dur = None
-
-        super().__init__(f=None, fs=fs, message=[], duration=dur, amplitude=1)
-        self.samples = samples
-        self.samplerate = None
+            self.samples = np.array([])
 
     def read_file(self, folder=""):
         file = folder + self.fn
@@ -66,7 +57,6 @@ class Demod(Signal):
         last_ind = index[-1] + int(padding)
 
         self.samples = self.samples[first_ind:last_ind]
-        self.dur = len(self.samples)/self.fs
 
     def detect_params(self):
         """
@@ -141,10 +131,7 @@ class Demod(Signal):
 
                     plt.draw()
 
-
         def onpick(event):
-            #global c
-
             if event.mouseevent.button == 3:  # If it's a right mouse click
                 ind = event.ind
                 # Only get the closest point
@@ -211,7 +198,95 @@ class Demod(Signal):
             index = (np.abs(c.map - sample)).argmin()
             out.append(symbols[index])
 
-        return out
+        return np.array(out)
+
+    def demod_ASK(self, m, iterations=1000):
+        """
+        Attempts to demodulate an amplitude shift keyed signal. Looks for m levels in the signal and assigns symbol
+        values to those levels. Assumes that the signal is currently at one sample per symbol.
+        """
+        # Convert to amplitude values
+        amps = np.abs(self.samples)
+        # No need to whiten if we only have 1 feature
+        # Perform kmeans clustering
+        clusters = kmeans(amps, m, iter=iterations, check_finite=False)
+        # Get the actual levels
+        levels = clusters[0]
+
+        # Now we map the levels to symbols
+
+        symbols = np.arange(len(levels))
+        out = []
+
+        for sample in amps:
+            index = (np.abs(levels - sample)).argmin()
+            out.append(symbols[index])
+
+        return np.array(out)
+
+    def demod_FSK(self, m, sps, iterations=1000):
+        """
+        Attempts to demodulate a frequency shift keyed signal. First it attempts to smooth any high frequency peaks
+        that might be caused by phase changes. Then it averages the frequency across the sample and maps the averages
+        to a symbol.
+
+        This function assumes that the samples per symbol is an integer number and that each symbol is well formed. If
+        any symbols are not fully represented (so there are dropped samples for that symbol) then this function will
+        probably not work too well. If you are missing the start of the first sample, simply pad that symbol out.
+
+        Note the frequency modulated data is very dependant upon the samples per symbol. More samples per symbol will
+        make it easier to identify the actual frequency being transmitted.
+        """
+        phase = np.unwrap(np.angle(self.samples))
+        freq = np.diff(phase) / (2 * np.pi) * self.fs
+
+        # Replace the first sample of each symbol with the second sample of each symbol, this will eliminate most
+        # peaks caused by instant phase shifts
+        for i in range(len(freq)):
+            # if it's the first symbol of the sample
+            if (i + 1) % sps == 0:
+                freq[i] = freq[i + 1]
+
+        # Changes peaks into the average
+        sd = np.std(freq)
+        av = np.mean(freq)
+
+        peak_mask = abs(freq) > 2 * sd + abs(av)
+
+        for i in range(len(peak_mask)):
+            # If it is a peak, we want to look ahead to the next non-peak and use that value
+            # (because peaks will probably occur at symbol boundaries)
+            if peak_mask[i]:
+                non_peak_index = np.where(peak_mask[i:i + sps] == False)[0]
+                if non_peak_index.size > 0:
+                    # Get the next non-peak value and overwrite the current peak with it
+                    freq[i] = freq[i + non_peak_index[0]]
+                else:
+                    # If there isn't an appropriate non_peak to use, just overwrite with the average
+                    freq[i] = av
+
+        # now we can average over the sample and be somewhat confident that the peaks aren't effecting our output value
+        averaged = [np.mean(freq[i:i + sps]) for i in range(0, len(freq), sps)]
+        averaged = np.array(averaged)
+
+        # Now we just cluster and then categorize
+
+        clusters = kmeans(averaged, m, iter=iterations, check_finite=False)
+        levels = clusters[0]
+
+        symbols = np.arange(len(levels))
+        out = []
+
+        for sample in averaged:
+            index = (np.abs(levels - sample)).argmin()
+            out.append(symbols[index])
+
+        return np.array(out)
+
+
+
+
+
 
 
 
