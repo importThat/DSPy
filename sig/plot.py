@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 import numpy as np
 
@@ -83,6 +85,9 @@ def plot(data, **kwargs):
             env = np.angle(data)
 
         elif kwargs['subtype'] == 'amp':
+            plt.title('Power View')
+            plt.xlabel("Samples (s)")
+            plt.ylabel("Power")
             env = np.abs(data)
 
         elif kwargs['subtype'] == 'freq':
