@@ -3,26 +3,14 @@ import dsproc
 """
 Generate QAMs
 """
-
-# Intermediate Hz, This will be the highest frequency that will occur in the modulated wave
-F = 1000
-
 # Create a random message of n symbols with m levels
 MESSAGE = dsproc.utils.create_message(n=10000, m=32)
 
-SYMBOL_RATE = 200      # Symbols per second
-DUR = len(MESSAGE) / SYMBOL_RATE    # Message duration (in seconds)
-
-# We want the sampling rate to satisfy Nyquist's level (2* highest frequency) and to also be an integer
-# multiple of the symbol rate (for ease of use reasons)
-# Fs = SYMBOL_RATE
-# while Fs <= F * 2:
-#     Fs += SYMBOL_RATE
-
 Fs = 2000
+sps = 2
 
 # Create the sig object with the given params
-s = dsproc.Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(Fs, MESSAGE, sps)
 
 # There are a few different QAM types that are currently supported. Use the one that appeals to you.
 # the .QAM method generates a constellation map for the number of symbols provided and then applys that map
