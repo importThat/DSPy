@@ -4,9 +4,6 @@ import dsproc
 Amplitude shift keying example
 """
 
-# Intermediate Hz, This will be the highest frequency that will occur in the modulated wave
-F = 50
-
 # Our message in symbol form. In this example we have 4 symbols, so each symbol would typically represent 2 bits
 # 0 = "00"
 # 1 = "01"
@@ -15,17 +12,11 @@ F = 50
 MESSAGE = [0, 1, 2, 3, 0, 1, 2, 3, 0, 0, 0, 1, 1, 1, 2, 2, 2, 0, 1, 2, 2, 1, 3]
 # For automated message generation use the create_message function in the Utils file
 
-SYMBOL_RATE = 50      # Symbols per second
-DUR = len(MESSAGE) / SYMBOL_RATE    # Message duration (in seconds)
-
-# We want the sampling rate to satisfy Nyquist's level (2* highest frequency) and to also be an integer
-# multiple of the symbol rate (for ease of use reasons)
-Fs = SYMBOL_RATE
-while Fs <= F * 2:
-    Fs += SYMBOL_RATE
-
+# We need to specify the sampling frequency and the samples per symbol
+Fs = 2000
+sps = 2
 # Create the sig object with the given params
-s = dsproc.Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(Fs, MESSAGE, sps)
 
 # Apply the amplitude shift keying
 s.ASK()
