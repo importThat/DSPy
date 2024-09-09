@@ -13,23 +13,19 @@ I suggest stepping through this line by line in a console
 
 np.random.seed(42)  # Set the seed for reproducibility
 
-F = 50000   # Intermediate
 M = 4   # The number of unique symbols
 MESSAGE = dsproc.utils.create_message(n=10000, m=M)  # Message symbols
 # Print a sample of the message
 print(MESSAGE[0:50])
 
-SYMBOL_RATE = 5000    # Symbols per second
-DUR = len(MESSAGE) / SYMBOL_RATE    # Message duration
+# Symbol rate
+Fs = 2000
 
-# We want the sampling rate to satisfy Nyquist's level (2* highest frequency) and to also be an integer
-# multiple of the symbol rate
-Fs = SYMBOL_RATE
-while Fs <= F * 3:
-    Fs += SYMBOL_RATE
+# Samples per symbol
+sps=2
 
 # Create the sig
-s = dsproc.Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(fs=Fs, message=MESSAGE, sps=sps)
 
 # Apply QAM modulation
 s.QAM(type="square")
@@ -43,7 +39,7 @@ s.fft()
 # Create a filter object with sps*10+1 taps (the magic number!)
 my_filter = dsproc.Filter(num_taps=s.sps * 10 + 1, fs=Fs)
 # Create a finite infinite response filter
-my_filter.FIR(width=SYMBOL_RATE*2)
+my_filter.FIR(width=Fs/sps*2)
 # Apply the filter to the sig at the correct frequency
 s.samples = my_filter.apply(s.samples, f_shift=F)
 
