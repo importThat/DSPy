@@ -9,13 +9,10 @@ A class for handling the input, compression, and encoding of message data. Can r
 file is stored in ram so the size may impact performance)
 """
 
-# Tomorrow
-# generate LDPC codes
-# start working on the decoders
-
 
 class Message:
     def __init__(self, fn=None, data=None):
+        self.pseudo_rand_sequence = None
         self.fn = fn
         self.data = data
         self.codewords = np.array([])
@@ -411,6 +408,79 @@ class Message:
             pad_bits = [i for i in pad_bits]
             self.data[0:16] = pad_bits
 
+    def LFSR(self, n, taps):
+        """
+        Generates a recursive sequence using a linear feedback shift register. Utilises a fast bit shifting algorithm
+        as seen here - https://en.wikipedia.org/wiki/Linear-feedback_shift_register
+
+        Initial fill is all ones
+
+        n: the length of the register
+
+        taps: an iterable containing the tap positions. Tap positions must be unique and less than or equal to n. Tap
+        positions cannot be 0.
+        """
+
+        start_state = (2 ** n) - 1
+        lfsr = start_state
+        random_code = ''
+
+        # Go for the maximal iterations I guess
+        for k in range((2 ** n) - 1):
+
+            # Get the first state, this will then be iterated upon for every tap
+            start = lfsr >> (n - taps[0])
+            bit = lfsr
+
+            for j in range(1, len(taps)):
+                bit = (bit >> (n - taps[j])) ^ start
+
+            bit = bit & 1
+            lfsr = (lfsr >> 1) | (bit << (n - 1))
+
+            random_code += lfsr
+
+            if lfsr == start_state and k < (2 ** n) - 2:
+                print("Non-maximal LFSR detected")
+                break
+
+        self.pseudo_rand_sequence = np.array([i for i in random_code], dtype=np.uint8)
+        self.pseudo_rand_sequence = self.pseudo_rand_sequence.reshape((-1, n))
+
+    def additive_scramble(self, n, taps):
+        """
+        XoRs the message data with the given linear recursive sequence. Initial fill is all ones.
+
+        n: the length of the register
+
+        taps: an iterable containing the tap positions. Tap positions must be unique and less than or equal to n. Tap
+        positions cannot be 0.
+
+        """
+        self.LFSR(n, taps)
+
+        # Pad if it isn't a good multiplier
+        self.data = self.data.flatten()
+
+        pad_amount = None
+        if len(self.data) % n:
+            pad_amount = n - (len(self.data) % n)
+            pad = np.zeros(shape=pad_amount, dtype=np.uint8)
+            self.data = np.concatenate((self.data, pad))
+
+        self.data = self.data.reshape((-1, n))
+        self.data ^ self.pseudo_rand_sequence
+
+        # Cut off the padding
+        if pad_amount:
+            self.data = self.data[:-pad_amount]
+
+    def feedthrough_scramble(self, n, taps):
+        """
+        Takes the data and feeds it through an LFSR which generates the given linear recursive sequence.
+        """
+        pass
+
     def ldpc_beliefprop(self):
         # Belief propagation for LDPC
         # https://yair-mz.medium.com/decoding-ldpc-codes-with-belief-propagation-43c859f4276d
@@ -419,7 +489,9 @@ class Message:
     def ldpc_hard(self):
         # Hard decision rule for LDPC
         # https://uweb.engr.arizona.edu/~ece506/readings/project-reading/5-ldpc/LDPC_Intro.pdf
-        return  None
+        return None
+
+
 
 
 
