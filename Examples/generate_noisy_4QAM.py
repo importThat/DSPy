@@ -14,18 +14,19 @@ I suggest stepping through this line by line in a console
 np.random.seed(42)  # Set the seed for reproducibility
 
 M = 4   # The number of unique symbols
-MESSAGE = dsproc.utils.create_message(n=10000, m=M)  # Message symbols
+MESSAGE = dsproc.create_message(n=10000, m=M)  # Message symbols
 # Print a sample of the message
 print(MESSAGE[0:50])
 
 # Symbol rate
-Fs = 2000
+fs = 2000
+f = 500
 
 # Samples per symbol
-sps=2
+sps=8
 
 # Create the sig
-s = dsproc.Mod(fs=Fs, message=MESSAGE, sps=sps)
+s = dsproc.Mod(fs=fs, message=MESSAGE, sps=sps, f=f)
 
 # Apply QAM modulation
 s.QAM(type="square")
@@ -37,11 +38,11 @@ s.fft()
 # to be a bit more polite!
 
 # Create a filter object with sps*10+1 taps (the magic number!)
-my_filter = dsproc.Filter(num_taps=s.sps * 10 + 1, fs=Fs)
+my_filter = dsproc.Filter(num_taps=s.sps * 10 + 1, fs=fs)
 # Create a finite infinite response filter
-my_filter.FIR(width=Fs/sps*2)
+my_filter.FIR(width=fs/sps*2)
 # Apply the filter to the sig at the correct frequency
-s.samples = my_filter.apply(s.samples, f_shift=F)
+s.samples = my_filter.apply(s.samples, f_shift=f)
 
 # The spectrum looks much cleaner now
 s.fft()
@@ -57,7 +58,7 @@ s.iq()
 # Add white gaussian noise. This is the "background noise of the universe" or some such. Just random noise that
 # effects the sig while it is propagating
 # Create the noise
-noise = dsproc.utils.AWGN(n=len(s.samples), power=0.02)
+noise = dsproc.AWGN(n=len(s.samples), power=0.02)
 # Add it in
 s.samples = s.samples + noise
 
@@ -67,7 +68,6 @@ s.iq()
 # Add some noise at the start and the end of the sig to simulate a real capture
 noise_amount = int(0.2*len(noise))
 s.samples = np.concatenate([noise[0:noise_amount], s.samples, noise[0:noise_amount]])
-s.dur += 2*noise_amount/s.fs
 
 # Note how we now have a bunch of dots around 0,0
 s.iq()
@@ -113,5 +113,5 @@ s.iq()
 s.fft()
 
 # Save the plot
-s.save(fn=f"QAM_generated_m={M}_fs={Fs}_sr={SYMBOL_RATE}")
+s.save(fn=f"QAM_generated_m={M}_fs={fs}_sps={sps}")
 
