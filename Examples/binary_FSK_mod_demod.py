@@ -9,23 +9,16 @@ Frequency shift keying example
 np.random.seed(50)
 
 # Intermediate Hz, This will be the highest frequency that will occur in the modulated wave
-F = 2000
+f = 2000
+fs = 8000
+sps = 8
 
 # 1000 symbols with 2 levels (so 1000 bits)
-MESSAGE = dsproc.utils.create_message(1000, 2)
+MESSAGE = dsproc.create_message(1000, 2)
 print(f"Message bits {MESSAGE[0:20]}")
 
-SYMBOL_RATE = 250      # Symbols per second
-DUR = len(MESSAGE) / SYMBOL_RATE    # Message duration (in seconds)
-
-# We want the sampling rate to satisfy Nyquist's level (2* highest frequency) and to also be an integer
-# multiple of the symbol rate (for ease of use reasons)
-Fs = SYMBOL_RATE
-while Fs <= F * 2:
-    Fs += SYMBOL_RATE
-
 # Create the sig object with the given params
-s = dsproc.Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(message=MESSAGE, fs=fs, sps=sps, f=f, amplitude=1)
 
 # Apply the frequency shift keying
 s.FSK()
@@ -46,7 +39,7 @@ freq_0 = -500
 freq_1 = 500
 
 # Create the two waves
-t = 1/Fs * np.arange(DUR * Fs)
+t = 1/s.fs * np.arange(s.dur * s.fs)
 
 angle_0 = 2 * np.pi * freq_0 * t
 angle_1 = 2 * np.pi * freq_1 * t
@@ -62,7 +55,6 @@ plt.plot(decode_0.real[0:200])
 plt.plot(decode_1.real[0:200])
 
 # Now we just average them over the sample
-sps = 17 # from the graph
 av_0 = np.array([np.mean(decode_0.real[i*sps:i*sps+sps]) for i in range(int(len(decode_0)/sps))])
 av_1 = np.array([np.mean(decode_1.real[i*sps:i*sps+sps]) for i in range(int(len(decode_1)/sps))])
 
