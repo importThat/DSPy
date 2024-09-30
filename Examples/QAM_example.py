@@ -4,7 +4,7 @@ import dsproc
 Generate QAMs
 """
 # Create a random message of n symbols with m levels
-MESSAGE = dsproc.utils.create_message(n=10000, m=32)
+MESSAGE = dsproc.create_message(n=10000, m=32)
 
 Fs = 2000
 sps = 2
@@ -30,4 +30,4 @@ s.baseband()
 # Look at the IQ plot of the sig
 s.iq()
 
-s.save("QAM_Test")
+#s.save("QAM_Test")
