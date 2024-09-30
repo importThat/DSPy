@@ -1,10 +1,7 @@
-/captures/
-/captures/gqrx_20240517_004122_462560000.wav
-/captures/gqrx_20240517_004134_462560000.wav
-/captures/gqrx_20240517_004142_462560000.wav
 /test_plots/
-/Demods/
-/code_graveyard/
-/message/explorations/
+/src/dsproc/message/explorations/
+/explorations/sig_explorations/
 /modulations/
-
+/src/dsproc.egg-info/
+/dist/
+/explorations/
