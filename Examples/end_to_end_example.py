@@ -1,8 +1,5 @@
-from message.message import Message
 import numpy as np
 import dsproc
-
-
 
 # *********************************** Encoding ***********************************************
 
@@ -37,41 +34,46 @@ message.symbolise(bits_per_symbol=2)
 # *********************************** Modulation ***********************************************
 
 # Now we can modulate, lets use QPSK
-F = 100e3
-SYMBOL_RATE = 20e3      # Symbols per second
-DUR = len(message.data) / SYMBOL_RATE    # Message duration (in seconds)
-Fs = SYMBOL_RATE
-while Fs <= F * 2:
-    Fs += SYMBOL_RATE
+f = 100e3
+sps = 16      # samples per symbol
+fs = f*3    # sample rate
 
-s = dsproc.Mod(message=message.data, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(fs=fs, message=message.data, sps=sps, f=f, amplitude=1)
 
-s.QPSK()
-
-# Baseband the sig
-s.baseband()
+s.QAM()
 
 
 # ****************************** Noise Sim ****************************************
 # Create some noise and add it into the signal
-noise = dsproc.utils.AWGN(n=len(s.samples), power=0.02)
+noise = dsproc.AWGN(n=len(s.samples), power=0.02)
 # Add it in
 s.samples = s.samples + noise
 
 
 # ***************************** Demod ********************************************
-d = dsproc.Demod(fs=F*2, filename=None)
+d = dsproc.Demod(fs=s.fs, filename=None)
 d.samples = s.samples.copy()
 sent_message = message.data.copy()
 del s, message  # Cleanup
-d.dur = len(d.samples) / d.fs   # Usually this would be set if you read the file in
-d.normalise_pwr()   # This too
+d.normalise_pwr()   # normalise power
 
 # We need to get it to one sample per symbol
-# just from looking at the samples I can see that it is 11 samples per symbol
-# TODO:
-#  UPSAMPLE FIRST
-sps = 11
+freq_offset = d.exponentiate(order=4)
+# We can see that the exponentiate collapses at order=4 and this gives us a way to baseband it
+# This also suggests that there are 4 symbols
+# Baseband the signal
+d.freq_offset(-1*freq_offset)
+
+# Now we need to figure out how many samples per symbol we have
+# The IQ plot shows no inter-symbol oddities, so that means our sps is an integer divisor of the sampling frequency
+# by looking at the phase view we can see that the smallest repeated strucutre has a duration of 16 samples,
+# so that is probably our sps
+
+
+# Upsample so we're sure that we are sampling at a good spot
+d.resample(up=10)
+
+sps = 16*10
 mags = []
 
 # For every possible phase offset, resample the data and then calculate it's average magnitude
@@ -83,8 +85,6 @@ for i in range(int(sps)):
 # Get the index of the biggest magnitude
 n = mags.index(max(mags))
 d.samples = d.samples[n::int(sps)]
-# retime because we have dropped a bunch of samples
-d.retime()
 
 # Do the demod
 c = dsproc.Constellation(M=4)
@@ -105,7 +105,8 @@ del d
 #   6 - Print the message!
 
 # 1 - Map from symbols to bits
-# Because we sent the message we know the bit map
+# Because we sent the message we know the bit map, if we didn't we would have to brute force or use a known crib
+# to figure out the map
 message = dsproc.Message(fn=None, data=symbols)
 message.desymbolise(bits_per_symbol=2)
 
