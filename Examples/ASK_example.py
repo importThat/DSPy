@@ -42,5 +42,5 @@ s.samples[0:20]
 # is very straightforward
 
 # Saves the samples as complex64 (compatible with gnuradio/usrp)
-s.save("ASK_test")
+#s.save("ASK_test")
 
