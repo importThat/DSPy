@@ -1,7 +1,8 @@
 import numpy as np
 import dsproc
 from matplotlib import pyplot as plt
-from sig.constellation import Constellation
+import os
+np.random.seed(42)  # Set the seed for reproducibility
 
 """
 This file steps through demodulating a noisy sig. Run the "generate_noisy_4QAM.py" program first to create the sig
@@ -9,14 +10,17 @@ This file steps through demodulating a noisy sig. Run the "generate_noisy_4QAM.p
 I suggest stepping through this line by line in a console
 """
 # Filename
-fn = "QAM_generated_m=4_fs=155000_sr=5000"
+fn = "QAM_generated_m=4_fs=2000_sps=8"
+# These are the symbols that are stored in the QAM file. We're generating them here so we can test to see if our
+# output is correct
+known_message = dsproc.create_message(10000, 4)
 
 # You will need to change this to point at the directory which contains the noisy QAM sig
-path = f"C:\\Users\\Justi\\Documents\\PythonProjects\\dsproc\\modulations\\{fn}"
+path = f"{os.getcwd()}\\{fn}"
 
 # Read in the file
 # (Change fs if you changed the sampling rate)
-s = dsproc.Demod(filename=path, fs=155000)
+s = dsproc.Demod(filename=path, fs=2000)
 
 # # Look at the sig
 s.fft()
@@ -32,14 +36,16 @@ s.trim_by_power()
 # Correct the frequency offsets
 
 # By raising the sig to the power of 4 we can see the frequency offset and the samples per symbol
+# freq_offset is just the biggest peak in the graph
 freq_offset = s.exponentiate(order=4)
 
-# Move down by freq_offset
-s.freq_offset(-1*freq_offset)
+# Baseband the signal using the frequency offset
+s.freq_offset(freq_offset)
 
-# from the exponentiate graph we can also see that our symbol rate is 5000 (6600 - 1600)
+# from the exponentiate graph we can also see that our symbol rate is 250 symbols per second. This is just the
+# difference between the spikes in the plot.
 # This means our samples per symbol is:
-sps = s.fs / 5000
+sps = int(s.fs / 250)
 
 # Looks a bit better!
 s.iq()
@@ -73,7 +79,6 @@ n = mags.index(max(mags))
 # re-sample
 # Starting at a peak, get each symbol!
 s.samples = s.samples[n::int(up_sps)]
-s.retime()  # Re-time because we have dropped a bunch of samples
 s.iq()
 
 # Nice! It looks like a noisy sig
@@ -90,17 +95,23 @@ s.normalise_pwr()
 # Show the points next to the qam
 plt.scatter(s.samples.real[0:1000], s.samples.imag[0:1000])
 plt.scatter(c.map.real, c.map.imag)
-# close enough for government work (as they say)
 
-# Decode the message
-message = s.QAM(c=c)
+# There's clearly a phase offset, lets try to line the dots up
+s.phase_offset(angle=-55)
+s.normalise_pwr()
 
-print(message[0:30])
+# Looks close enough. The clusters just have to be closest to a single dot.
+plt.scatter(s.samples.real[0:1000], s.samples.imag[0:1000])
+plt.scatter(c.map.real, c.map.imag)
 
-# Nearly there, but there's still a 90 degree phase offset, so if we rotate we should get the exact symbols
-s.phase_offset(angle=-90)
+# There's a problem though. The last symbol is sitting in the middle of the plot. This is an artifact from our trimming
+# function. That's ok, we can just drop it.
+# Decode the message, trying all different phase rotations
+for i in range(0, 360, 90):
+    s.phase_offset(i)
+    message = s.QAM(c=c)
+    if np.all(message[1:] == known_message[:-1]):
+        print("message successfully recovered!")
+        break
 
-# Decode again
-message = s.QAM(c=c)
-
-print(message[0:30])
+print(message[1:100])
