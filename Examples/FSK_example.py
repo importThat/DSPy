@@ -5,31 +5,20 @@ Frequency shift keying example
 """
 
 # Intermediate Hz, This will be the highest frequency that will occur in the modulated wave
-# I use a higher frequency here so we can see the fsk more easily
-F = 2000
-
+f = 2000
+fs = 8000   # Use a high sample rate so the fsk is easier to see in the time domain
+sps = 16
 # Our message in symbol form. In this example we have 4 symbols, so each symbol would typically represent 2 bits
 # 0 = "00"
 # 1 = "01"
 # 2 = "10"
 # 3 = "11" etc.
 # Create a random message of 100 symbols with 4 levels
-MESSAGE = dsproc.utils.create_message(100, 4)
+MESSAGE = dsproc.create_message(100, 4)
 
-SYMBOL_RATE = 250      # Symbols per second
-DUR = len(MESSAGE) / SYMBOL_RATE    # Message duration (in seconds)
-
-# We want the sampling rate to satisfy Nyquist's level (2* highest frequency) and to also be an integer
-# multiple of the symbol rate (for ease of use reasons)
-Fs = SYMBOL_RATE
-while Fs <= F * 2:
-    Fs += SYMBOL_RATE
-
-# Increase the symbol rate a bit so the FSK is easier to see
-Fs += SYMBOL_RATE * 2
 
 # Create the sig object with the given params
-s = dsproc.Mod(message=MESSAGE, f=F, fs=Fs, duration=DUR, amplitude=1)
+s = dsproc.Mod(message=MESSAGE, fs=fs, sps=sps, f=f)
 
 # Apply the frequency shift keying
 s.FSK()
@@ -56,7 +45,6 @@ s.samples[0:20]
 # This sample can then be saved and transmitted with GNU-radio or the USRP python interface. Doing it either way
 # is very straightforward
 
-# I believe gnuradio and the usrp python api will mix your sig back up to the transmit frequency, but if not you can
 # apply a frequency shift with the freq_offset method
 s.freq_offset(freq=500)
 s.fft()
@@ -64,5 +52,5 @@ s.fft()
 s.baseband()
 
 # Saves the samples as complex64 (compatible with gnuradio/usrp)
-s.save("FSK_test")
+#s.save("FSK_test")
 
