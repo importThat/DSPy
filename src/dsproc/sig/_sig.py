@@ -47,7 +47,7 @@ class Signal:
 
     @property
     def t(self):
-        return 1 / self.fs * np.arange(self.dur * self.fs)
+        return 1 / self.fs * np.arange(self.n_samples)
 
     def create_samples(self, freq, theta=0, amp=1):
         """
