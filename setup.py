@@ -2,8 +2,8 @@ from setuptools import setup
 
 setup(
     name = "dsproc",
-    version = "0.0.0a1",
-    install_requires=["matplotlib >= 3.8.0", "numpy >= 1.2.0", "scipy >= 1.1.0"],
+    version = "0.0.0a3",
+    install_requires=["matplotlib", "numpy", "scipy"],
     description="dsproc: a powerful digital signals processing toolkit",
     long_description="dsproc is a Python package that enables the analysis and processing of digital radio signals using "
                 "an intuitive and approachable framework. It supports end to end digital communcations and gives users "
