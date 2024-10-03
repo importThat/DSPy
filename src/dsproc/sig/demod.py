@@ -11,11 +11,11 @@ Class with demod functions, ideally this is automated but very much still a work
 
 
 class Demod(Signal):
-    def __init__(self, fs, filename=None):
-        self.fn = filename
-        super().__init__(f=0, fs=fs, message=[], amplitude=1)
+    def __init__(self, fs, fn=None, f=0):
+        self.fn = fn
+        super().__init__(f=f, fs=fs, message=[], amplitude=1)
 
-        if filename:
+        if fn:
             self.samples = self.read_file()
         else:
             self.samples = np.array([])
@@ -24,16 +24,6 @@ class Demod(Signal):
         file = folder + self.fn
         samples = np.fromfile(file, np.complex64)
         return samples
-
-    def normalise_pwr(self):
-        """
-        normalises samples to be between 1 and 0
-        """
-        max_real = max(abs(self.samples.real))
-        max_imag = max(abs(self.samples.imag))
-
-        max_val = max(max_imag, max_real)
-        self.samples = (self.samples / max_val)
 
     def detect_params(self):
         """
