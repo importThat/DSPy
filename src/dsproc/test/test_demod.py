@@ -18,7 +18,7 @@ class TestDemod(unittest.TestCase):
         # demod
         d = dsproc.Demod(fs=10000)
         d.samples = s.samples.copy()
-        d.normalise_pwr()
+        d.normalise_amplitude()
 
         self.assertTrue(np.all(d.samples >= -1.1))
         self.assertTrue(np.all(d.samples <= 1.1))
