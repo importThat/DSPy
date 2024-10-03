@@ -4,6 +4,7 @@ from time import time
 import os
 from scipy.io.wavfile import write
 from scipy import signal
+from pathlib import Path
 
 
 class Signal:
@@ -305,8 +306,6 @@ class Signal:
             self.samples[:first_ind] = 0 + 0j
             self.samples[last_ind:] = 0 + 0j
 
-
-
     # ***********************************                    ************************************
     # ************************************ Plotting Functions ************************************
     # *************************************                    ************************************
@@ -367,12 +366,11 @@ class Signal:
 
         plot(self.samples, **kwargs)
 
-
     def fft(self, nfft=1024):
         kwargs = {"type": "fft",
                   "title": "FFT of Signal",
                   "fs": self.fs,
-                  "nfft":nfft}
+                  "nfft": nfft}
         plot(self.samples, **kwargs)
 
     def time(self, n=0):
@@ -387,15 +385,22 @@ class Signal:
         plot(self.samples, **kwargs)
 
     def save(self, fn=None, path=None, wav=False):
-        # If there is no path provided then save it in the current working directory
+        # If there is no path provided then save it in the directory the function is called from
+        path_object = None
         if not path:
-            path = os.getcwd()
+            path_object = Path().absolute()
+        else:
+            path_object = Path(path)
+
+        # Check to make sure that worked
+        if not path_object:
+            raise ValueError("Enter a valid absolute path into the path argument or leave it blank")
 
         # If no file name make one
         if not fn:
-            fn = f"Sig_f={self.f}_fs={self.fs}_dur={self.dur}_{int(time())}"
+            fn = f"Sig_f={self.f}_fs={self.fs}_sps={self.sps}_{int(time())}"
 
-        save_string = path + "\\" + fn
+        save_path = path_object.joinpath(fn)
 
         # If we're saving it as a wav
         if wav:
@@ -412,7 +417,7 @@ class Signal:
             self.baseband()
 
         else:
-            self.samples.tofile(save_string)
+            self.samples.tofile(save_path)
 
 
 
