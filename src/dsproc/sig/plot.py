@@ -1,5 +1,3 @@
-import matplotlib
-matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 import numpy as np
 
@@ -20,7 +18,6 @@ def plot(data, **kwargs):
         plt.title(kwargs['title'])
         plt.ylabel("Frequency (Hz)")
         plt.xlabel("Time (s)")
-        plt.show()
 
     elif kwargs['type'] == 'psd':
         plt.psd(data, NFFT=kwargs['nfft'], Fs=kwargs['fs'])
@@ -28,7 +25,6 @@ def plot(data, **kwargs):
         plt.axhline(0, color='lightgray')  # x = 0
         plt.axvline(0, color='lightgray')  # y = 0
         plt.grid(True)
-        plt.show()
 
     elif kwargs['type'] == 'iq':
         plt.scatter(data.real, data.imag)
@@ -43,7 +39,6 @@ def plot(data, **kwargs):
 
         plt.xlim(-1*ax_max, ax_max)
         plt.ylim(-1*ax_max, ax_max)
-        plt.show()
 
     elif kwargs['type'] == "fft":
         if 'nfft' in kwargs.keys():
@@ -61,7 +56,6 @@ def plot(data, **kwargs):
         plt.title(kwargs['title'])
         plt.xlabel("Frequency (Hz)")
         plt.ylabel("Amplitude")
-        plt.show()
 
     elif kwargs['type'] == "time":
         t = kwargs['t']
@@ -77,7 +71,6 @@ def plot(data, **kwargs):
         plt.title(kwargs['title'])
         plt.xlabel("Time (s)")
         plt.ylabel("Amplitude")
-        plt.show()
 
     elif kwargs['type'] == "view":
         env = None
@@ -85,7 +78,7 @@ def plot(data, **kwargs):
             env = np.angle(data)
 
         elif kwargs['subtype'] == 'amp':
-            plt.title('Power View')
+            plt.title('Amplitude View')
             plt.xlabel("Samples (s)")
             plt.ylabel("Power")
             env = np.abs(data)
@@ -95,6 +88,8 @@ def plot(data, **kwargs):
             env = np.diff(phase) / (2*np.pi) * kwargs['fs']
 
         plt.plot(env)
+
+    plt.show()
 
 
 
