@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 import numpy as np
 
@@ -75,19 +77,25 @@ def plot(data, **kwargs):
     elif kwargs['type'] == "view":
         env = None
         if kwargs['subtype'] == "phase":
+            plt.title("Phase View")
+            plt.ylabel("Phase (Radians)")
             env = np.angle(data)
 
         elif kwargs['subtype'] == 'amp':
             plt.title('Amplitude View')
-            plt.xlabel("Samples (s)")
-            plt.ylabel("Power")
+            plt.ylabel("Amplitude")
             env = np.abs(data)
 
         elif kwargs['subtype'] == 'freq':
+            plt.title("Frequency View")
+            plt.ylabel("Frequency (Hz)")
             phase = np.unwrap(np.angle(data))
             env = np.diff(phase) / (2*np.pi) * kwargs['fs']
 
-        plt.plot(env)
+        plt.xlabel("Samples (s)")
+        start_sample = kwargs['start']
+        x_ticks = np.arange(start=start_sample, stop=start_sample+len(env))
+        plt.plot(x_ticks, env)
 
     plt.show()
 
