@@ -153,6 +153,15 @@ class Signal:
         self.fs = int(self.fs * up/down)
         self.sps = int(self.sps * (up/down))
 
+    def decimate(self, n, filter_order, ftype='iir'):
+        "wrapper for scipy's decimate. First filters out high frequency components and then takes every nth sample"
+        if n > 13:
+            raise Warning("it is recommended to call decimate multiple times for downsampling factors greater than 13")
+
+        self.samples = signal.decimate(self.samples, n, n=filter_order, ftype=ftype)
+        self.fs = int(self.fs / n)
+        self.sps = int(self.sps / n)
+
     def efficiency(self):
         """
         Calculates bandwidth efficiency of the signal. This is the total area under the curve of the signals fft plot
@@ -316,7 +325,8 @@ class Signal:
         """
         kwargs = {
             "type": "view",
-            "subtype": "phase"
+            "subtype": "phase",
+            "start": start_sample
             }
         plot(self.samples[start_sample:start_sample + n], **kwargs)
 
@@ -327,7 +337,8 @@ class Signal:
         kwargs = {
             "type": "view",
             "subtype": "freq",
-            "fs": self.fs
+            "fs": self.fs,
+            "start": start_sample
             }
         plot(self.samples[start_sample:start_sample + n], **kwargs)
 
@@ -337,7 +348,8 @@ class Signal:
         """
         kwargs = {
             "type": "view",
-            "subtype": "amp"
+            "subtype": "amp",
+            "start": start_sample
             }
         plot(self.samples[start_sample:start_sample + n], **kwargs)
 
@@ -360,11 +372,11 @@ class Signal:
                   "title": f"PSD at Baseband (NFFT={nfft})"}
         plot(self.samples, **kwargs)
 
-    def iq(self):
+    def iq(self, n=500000, start_sample=0):
         kwargs = {"type": "iq",
                   "title": "IQ Scatter"}
 
-        plot(self.samples, **kwargs)
+        plot(self.samples[start_sample:start_sample+n], **kwargs)
 
     def fft(self, nfft=1024):
         kwargs = {"type": "fft",
@@ -373,16 +385,16 @@ class Signal:
                   "nfft": nfft}
         plot(self.samples, **kwargs)
 
-    def time(self, n=0):
+    def time(self, n=400000, start_sample=0):
         t = self.t
-        t = t[0:len(self.samples)]
+        t = t[start_sample:start_sample+n]
 
         kwargs = {"type": "time",
                   "t": t,
-                  "title": "Time Domain",
+                  "title": "Time View",
                   "n": n}
 
-        plot(self.samples, **kwargs)
+        plot(self.samples[start_sample:start_sample+n], **kwargs)
 
     def save(self, fn=None, path=None, wav=False):
         # If there is no path provided then save it in the directory the function is called from
