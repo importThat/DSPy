@@ -454,7 +454,7 @@ class Message:
         n: the length of the register
 
         taps: an iterable containing the tap positions. Tap positions must be unique and less than or equal to n. Tap
-        positions cannot be 0.
+        positions cannot be 0. If taps are none then a maximal LFSR of the correct length is chosen (up to length 24)
         """
         if not taps:
             taps = self.lfsr_lookup[str(n)]
