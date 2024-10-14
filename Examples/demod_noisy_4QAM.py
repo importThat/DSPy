@@ -20,7 +20,7 @@ path = f"{os.getcwd()}\\{fn}"
 
 # Read in the file
 # (Change fs if you changed the sampling rate)
-s = dsproc.Demod(filename=path, fs=2000)
+s = dsproc.Demod(fn=path, fs=2000)
 
 # # Look at the sig
 s.fft()
@@ -90,7 +90,7 @@ c.square()
 c.normalise()
 
 # We need to normalise our sig so it's on the same scale as the constellation
-s.normalise_pwr()
+s.normalise_amplitude()
 
 # Show the points next to the qam
 plt.scatter(s.samples.real[0:1000], s.samples.imag[0:1000])
@@ -98,7 +98,7 @@ plt.scatter(c.map.real, c.map.imag)
 
 # There's clearly a phase offset, lets try to line the dots up
 s.phase_offset(angle=-55)
-s.normalise_pwr()
+s.normalise_amplitude()
 
 # Looks close enough. The clusters just have to be closest to a single dot.
 plt.scatter(s.samples.real[0:1000], s.samples.imag[0:1000])

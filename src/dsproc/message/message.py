@@ -52,7 +52,6 @@ class Message:
             "24": (24, 23, 22, 17)
         }
 
-
     def read(self):
         # Read in the data
         data = np.fromfile(self.fn, dtype="uint8")
@@ -83,9 +82,19 @@ class Message:
 
     def symbolise(self, bits_per_symbol):
         """
-        Converts a message of bits to integer symbols,
+        Converts a message of bits to integer symbols, pads with 0s if the data isn't an integer number of bits per
+        symbol
         :return:
         """
+        # If the data isn't an integer number of bits per symbol long
+        overflow = len(self.data) % bits_per_symbol
+        if overflow:
+            # Pad the data with the remainder
+            pad_amount = bits_per_symbol - overflow
+            pad = np.zeros(pad_amount)
+            self.data = np.concatenate([self.data, pad])
+            self.padding += pad_amount
+
         self.data = self.data.reshape([-1, bits_per_symbol])
 
         symbol_matrix = np.arange(bits_per_symbol)
@@ -445,7 +454,7 @@ class Message:
         n: the length of the register
 
         taps: an iterable containing the tap positions. Tap positions must be unique and less than or equal to n. Tap
-        positions cannot be 0.
+        positions cannot be 0. If taps are none then a maximal LFSR of the correct length is chosen (up to length 24)
         """
         if not taps:
             taps = self.lfsr_lookup[str(n)]

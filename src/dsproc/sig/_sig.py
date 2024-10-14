@@ -4,6 +4,7 @@ from time import time
 import os
 from scipy.io.wavfile import write
 from scipy import signal
+from pathlib import Path
 
 
 class Signal:
@@ -47,7 +48,7 @@ class Signal:
 
     @property
     def t(self):
-        return 1 / self.fs * np.arange(self.dur * self.fs)
+        return 1 / self.fs * np.arange(self.n_samples)
 
     def create_samples(self, freq, theta=0, amp=1):
         """
@@ -151,6 +152,15 @@ class Signal:
         self.samples = signal.resample_poly(self.samples, up, down)
         self.fs = int(self.fs * up/down)
         self.sps = int(self.sps * (up/down))
+
+    def decimate(self, n, filter_order, ftype='iir'):
+        "wrapper for scipy's decimate. First filters out high frequency components and then takes every nth sample"
+        if n > 13:
+            raise Warning("it is recommended to call decimate multiple times for downsampling factors greater than 13")
+
+        self.samples = signal.decimate(self.samples, n, n=filter_order, ftype=ftype)
+        self.fs = int(self.fs / n)
+        self.sps = int(self.sps / n)
 
     def efficiency(self):
         """
@@ -305,8 +315,6 @@ class Signal:
             self.samples[:first_ind] = 0 + 0j
             self.samples[last_ind:] = 0 + 0j
 
-
-
     # ***********************************                    ************************************
     # ************************************ Plotting Functions ************************************
     # *************************************                    ************************************
@@ -317,7 +325,8 @@ class Signal:
         """
         kwargs = {
             "type": "view",
-            "subtype": "phase"
+            "subtype": "phase",
+            "start": start_sample
             }
         plot(self.samples[start_sample:start_sample + n], **kwargs)
 
@@ -328,7 +337,8 @@ class Signal:
         kwargs = {
             "type": "view",
             "subtype": "freq",
-            "fs": self.fs
+            "fs": self.fs,
+            "start": start_sample
             }
         plot(self.samples[start_sample:start_sample + n], **kwargs)
 
@@ -338,7 +348,8 @@ class Signal:
         """
         kwargs = {
             "type": "view",
-            "subtype": "amp"
+            "subtype": "amp",
+            "start": start_sample
             }
         plot(self.samples[start_sample:start_sample + n], **kwargs)
 
@@ -361,41 +372,47 @@ class Signal:
                   "title": f"PSD at Baseband (NFFT={nfft})"}
         plot(self.samples, **kwargs)
 
-    def iq(self):
+    def iq(self, n=500000, start_sample=0):
         kwargs = {"type": "iq",
                   "title": "IQ Scatter"}
 
-        plot(self.samples, **kwargs)
-
+        plot(self.samples[start_sample:start_sample+n], **kwargs)
 
     def fft(self, nfft=1024):
         kwargs = {"type": "fft",
                   "title": "FFT of Signal",
                   "fs": self.fs,
-                  "nfft":nfft}
+                  "nfft": nfft}
         plot(self.samples, **kwargs)
 
-    def time(self, n=0):
+    def time(self, n=400000, start_sample=0):
         t = self.t
-        t = t[0:len(self.samples)]
+        t = t[start_sample:start_sample+n]
 
         kwargs = {"type": "time",
                   "t": t,
-                  "title": "Time Domain",
+                  "title": "Time View",
                   "n": n}
 
-        plot(self.samples, **kwargs)
+        plot(self.samples[start_sample:start_sample+n], **kwargs)
 
     def save(self, fn=None, path=None, wav=False):
-        # If there is no path provided then save it in the current working directory
+        # If there is no path provided then save it in the directory the function is called from
+        path_object = None
         if not path:
-            path = os.getcwd()
+            path_object = Path().absolute()
+        else:
+            path_object = Path(path)
+
+        # Check to make sure that worked
+        if not path_object:
+            raise ValueError("Enter a valid absolute path into the path argument or leave it blank")
 
         # If no file name make one
         if not fn:
-            fn = f"Sig_f={self.f}_fs={self.fs}_dur={self.dur}_{int(time())}"
+            fn = f"Sig_f={self.f}_fs={self.fs}_sps={self.sps}_{int(time())}"
 
-        save_string = path + "\\" + fn
+        save_path = path_object.joinpath(fn)
 
         # If we're saving it as a wav
         if wav:
@@ -412,7 +429,7 @@ class Signal:
             self.baseband()
 
         else:
-            self.samples.tofile(save_string)
+            self.samples.tofile(save_path)
 
 
 

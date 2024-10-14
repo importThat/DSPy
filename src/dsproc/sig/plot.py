@@ -20,7 +20,6 @@ def plot(data, **kwargs):
         plt.title(kwargs['title'])
         plt.ylabel("Frequency (Hz)")
         plt.xlabel("Time (s)")
-        plt.show()
 
     elif kwargs['type'] == 'psd':
         plt.psd(data, NFFT=kwargs['nfft'], Fs=kwargs['fs'])
@@ -28,7 +27,6 @@ def plot(data, **kwargs):
         plt.axhline(0, color='lightgray')  # x = 0
         plt.axvline(0, color='lightgray')  # y = 0
         plt.grid(True)
-        plt.show()
 
     elif kwargs['type'] == 'iq':
         plt.scatter(data.real, data.imag)
@@ -43,7 +41,6 @@ def plot(data, **kwargs):
 
         plt.xlim(-1*ax_max, ax_max)
         plt.ylim(-1*ax_max, ax_max)
-        plt.show()
 
     elif kwargs['type'] == "fft":
         if 'nfft' in kwargs.keys():
@@ -61,7 +58,6 @@ def plot(data, **kwargs):
         plt.title(kwargs['title'])
         plt.xlabel("Frequency (Hz)")
         plt.ylabel("Amplitude")
-        plt.show()
 
     elif kwargs['type'] == "time":
         t = kwargs['t']
@@ -77,24 +73,31 @@ def plot(data, **kwargs):
         plt.title(kwargs['title'])
         plt.xlabel("Time (s)")
         plt.ylabel("Amplitude")
-        plt.show()
 
     elif kwargs['type'] == "view":
         env = None
         if kwargs['subtype'] == "phase":
+            plt.title("Phase View")
+            plt.ylabel("Phase (Radians)")
             env = np.angle(data)
 
         elif kwargs['subtype'] == 'amp':
-            plt.title('Power View')
-            plt.xlabel("Samples (s)")
-            plt.ylabel("Power")
+            plt.title('Amplitude View')
+            plt.ylabel("Amplitude")
             env = np.abs(data)
 
         elif kwargs['subtype'] == 'freq':
+            plt.title("Frequency View")
+            plt.ylabel("Frequency (Hz)")
             phase = np.unwrap(np.angle(data))
             env = np.diff(phase) / (2*np.pi) * kwargs['fs']
 
-        plt.plot(env)
+        plt.xlabel("Samples (s)")
+        start_sample = kwargs['start']
+        x_ticks = np.arange(start=start_sample, stop=start_sample+len(env))
+        plt.plot(x_ticks, env)
+
+    plt.show()
 
 
 

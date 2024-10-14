@@ -55,7 +55,7 @@ d = dsproc.Demod(fs=s.fs, filename=None)
 d.samples = s.samples.copy()
 sent_message = message.data.copy()
 del s, message  # Cleanup
-d.normalise_pwr()   # normalise power
+d.normalise_amplitude()   # normalise power
 
 # We need to get it to one sample per symbol
 freq_offset = d.exponentiate(order=4)
