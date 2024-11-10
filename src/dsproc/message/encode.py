@@ -156,7 +156,7 @@ def ldpc(n, j, k):
     return H.T, G
 
 
-def crc(data, polynomial="16"):
+def crc(data: np.ndarray, polynomial: np.ndarray | str = "32"):
     """
     cyclic redundancy check
 
@@ -185,7 +185,12 @@ def crc(data, polynomial="16"):
                                                                         # meter rates
             "14": np.array([1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1]),  # Another data radio channel
             "15": np.array([1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1]),   # CAN, used to control ECUs
-            "16": np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+            "16": np.array([1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+
+            "32": np.array([0, 0, 0, 0, 0, 1, 0, 0,
+                            1, 1, 0, 0, 0, 0, 0, 1,
+                            0, 0, 0, 1, 1, 1, 0, 1,
+                            1, 0, 1, 1, 0, 1, 1, 1])
             }
 
     if type(polynomial) is str:
