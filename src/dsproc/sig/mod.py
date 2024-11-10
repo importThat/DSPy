@@ -19,22 +19,23 @@ class Mod(Signal):
 
         self.samples = self.create_samples(freq=self.f, amp=amp_mod_z)
 
-    def FSK(self):
+    def FSK(self, spacing: int):
         """
-        samples = A * e^i(2pi*f*t + theta)
+        spacing: The gap in Hz between each frequency encoding
 
-        FSK creates new samples where the f in the equation above is modulated by the symbols. Makes no attempt
-        to fix phase shifts
+        Modulates the data into a wave using frequency shift keying.
         """
         freqs = self.message + 1      # Add one to avoid zero frequency
-        freqs = freqs / max(freqs)   # Normalize
-        freqs = freqs * self.f
+        freqs = freqs * spacing
+
+        # We want the modulation to be centered around f.
+        freqs += self.f
+        # This centers it back on self.f
+        freqs -= int(max(freqs)/2)
         f_mod_z = np.repeat(freqs, self.sps)
 
         z = self.create_samples(freq=f_mod_z, theta=0, amp=1)
-
         self.samples = z.astype(np.complex64)
-        self.fsk = True
 
     def PSK(self):
         """
@@ -48,27 +49,6 @@ class Mod(Signal):
         z = self.create_samples(freq=self.f, theta=p_mod_z)
         self.samples = z.astype(np.complex64)
 
-    def PSM(self, symbol_gaps, xmit_dur):
-        # TODO
-        #   Fix this function to make it more useable
-        """
-        Pulse-spacing modulation, also pulse position modulation. Modulates the wave by changing the time difference
-        between pulses.
-        :param: symbol_gaps: The number of samples to be left between pulses for each symbol
-        """
-        # This creates more samples than we need
-        xmit_samps = self.create_samples(freq=self.f)
-        samps_needed = xmit_dur * self.fs
-        xmit_samps = xmit_samps[0:samps_needed]
-
-        output = xmit_samps.copy()
-
-        for symbol in self.message:
-            phrase = np.repeat(symbol, symbol_gaps[symbol]) # repeat for the appropriate length
-            phrase = phrase * 0+0j  # Make it complex and zero it
-            np.concatenate([output, phrase, xmit_samps])    # attach the pulse
-
-        self.samples = output
 
     def QPSK(self):
         """
@@ -125,7 +105,7 @@ class Mod(Signal):
 
         self.samples = z
 
-    def CPFSK(self, squish_factor=20):
+    def CPFSK(self, spacing):
         """
         samples = A * e^i(2pi*f*t + theta)
 
@@ -139,15 +119,14 @@ class Mod(Signal):
 
 
         """
+        freqs = self.message + 1      # Add one to avoid zero frequency
+        freqs = freqs * spacing
 
-        # TODO
-        #   Change phase vector so it is always < 2pi
-        #   To speed up computation, can precompute the phase offset per symbol
-        #
-        freqs = self.message + squish_factor      # The larger the number added here to more the frequencies are pushed together
-        freqs = freqs / max(freqs)   # Normalize
-        freqs = freqs * self.f
-        f_mod_z = np.repeat(freqs, self.sps)     # FSK message
+        # We want the modulation to be centered around f.
+        freqs += self.f
+        # This centers it back on self.f
+        freqs -= int(max(freqs)/2)
+        f_mod_z = np.repeat(freqs, self.sps)
 
         # Cumulative phase offset
         delta_phi = 2.0 * f_mod_z * np.pi / self.fs    # Change in phase at every timestep (in radians per timestep)
@@ -156,9 +135,9 @@ class Mod(Signal):
         z = self.amp * np.exp(1j * phi)  # creates sinusoid theta phase shift
         z = np.array(z)
         self.samples = z.astype(np.complex64)
-        self.fsk = True
 
-    def CPFSK_smoother(self, squish_factor=20, smooth_n=10, weights=None):
+
+    def CPFSK_smoother(self, spacing, smooth_n=10, weights=None):
         """
         samples = A * e^i(2pi*f*t + theta)
 
@@ -173,10 +152,14 @@ class Mod(Signal):
         resource:
         https://dsp.stackexchange.com/questions/80768/fsk-modulation-with-python
         """
-        freqs = self.message + squish_factor  # The larger the number added here to more the frequencies are pushed together
-        freqs = freqs / max(freqs)  # Normalize
-        freqs = freqs * self.f
-        f_mod_z = np.repeat(freqs, self.sps)  # FSK message
+        freqs = self.message + 1      # Add one to avoid zero frequency
+        freqs = freqs * spacing
+
+        # We want the modulation to be centered around f.
+        freqs += self.f
+        # This centers it back on self.f
+        freqs -= int(max(freqs)/2)
+        f_mod_z = np.repeat(freqs, self.sps)
 
         # Now we pass an averaging window over the frequencies. This will ensure we slowly transition from one
         # frequency to the next.
@@ -205,7 +188,7 @@ class Mod(Signal):
         z = self.amp * np.exp(1j * phi)  # creates sinusoid theta phase shift
         z = np.array(z)
         self.samples = z.astype(np.complex64)
-        self.fsk = True
+
 
     def FHSS(self, hop_f, freqs, pattern=np.array([])):
         """
