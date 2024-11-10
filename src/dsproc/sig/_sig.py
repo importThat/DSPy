@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 class Signal:
-    def __init__(self, fs, message, sps=2, amplitude=1, f=100):
+    def __init__(self, fs: int, message, sps: int = 2, amplitude: float = 1.0, f: int = 100):
         # Sampling frequency
         self.fs = fs
         # Message as an array of symbols
@@ -21,7 +21,7 @@ class Signal:
         self.amp = amplitude
 
         self.samples = []
-        self.fsk = False
+
 
     @property
     def n_samples(self):
@@ -50,7 +50,7 @@ class Signal:
     def t(self):
         return 1 / self.fs * np.arange(self.n_samples)
 
-    def create_samples(self, freq, theta=0, amp=1):
+    def create_samples(self, freq: int | np.ndarray, theta: int | np.ndarray = 0, amp: int | np.ndarray = 1):
         """
         Signal = A * np.cos(2 * np.pi * f * t + theta) + A * 1j * np.sin(2 * np.pi * f * t + theta)
         where:
@@ -95,18 +95,13 @@ class Signal:
 
     def baseband(self):
         """
-        Move the sig to baseband (0 frequency)
+        Basebands the signal using the frequency stored in the 'f' attribute
         """
         if not self.f:
             raise ValueError("Cannot baseband signal because the center frequency is unknown. Set the attribute 'f' to "
                              "some integer value")
-        if self.fsk:
-            freq = (np.arange(self.M) + 1) / self.M
-            freq = np.mean(freq * self.f)
 
-            offset = self.create_samples(freq=-1*freq)
-        else:
-            offset = self.create_samples(freq=-1*self.f)
+        offset = self.create_samples(freq=-1*self.f)
         self.samples = self.samples * offset
         self.f = 0
 
@@ -122,7 +117,7 @@ class Signal:
 
     def phase_offset(self, angle=40):
         """
-        Adds a phase offset of x degrees to the sig
+        Adds a phase offset of x degrees to the signal
         """
         # degrees to radians
         phase_offset = angle*np.pi / 180
@@ -132,7 +127,7 @@ class Signal:
 
     def freq_offset(self, freq=1000):
         """
-        Moves the sig up by some amount of Hz
+        Moves the signal up by the given frequency. Adds the frequency offset to the 'f' attribute.
         """
         freq_offset = self.create_samples(freq=freq, theta=0, amp=1)
         freq_offset = freq_offset[0:len(self.samples)]  # In case it's a bit longer
@@ -145,15 +140,16 @@ class Signal:
 
         self.fsk = False
 
-    def resample(self, up=16, down=1):
+    def resample(self, up: int = 16, down: int = 1):
         """
-        A simple wrapper for scipy's resample
+        A simple wrapper for scipy's resample. Resamples the signal up/down the given number of samples.
+        See more -
         """
         self.samples = signal.resample_poly(self.samples, up, down)
         self.fs = int(self.fs * up/down)
         self.sps = int(self.sps * (up/down))
 
-    def decimate(self, n, filter_order, ftype='iir'):
+    def decimate(self, n: int, filter_order: int, ftype='iir'):
         "wrapper for scipy's decimate. First filters out high frequency components and then takes every nth sample"
         if n > 13:
             raise Warning("it is recommended to call decimate multiple times for downsampling factors greater than 13")
@@ -212,7 +208,7 @@ class Signal:
         sos = signal.butter(10, (f_low, f_high), 'bandstop', fs=self.fs, output='sos')
         self.samples = signal.sosfilt(sos, self.samples)
 
-    def _gen_rrc(self, alpha, N):
+    def _gen_rrc(self, alpha: float, N: int):
         """
         Code adapted from: https://github.com/veeresht/CommPy/blob/master/commpy/filters.py
 
@@ -260,7 +256,7 @@ class Signal:
 
         return rrc
 
-    def rrc(self, alpha=0.4, N=0):
+    def rrc(self, alpha: float = 0.4, N: int = 0):
         """
         Applies a root raised cosine filter to the signal
 
@@ -288,12 +284,13 @@ class Signal:
         # Return the filter values
         return rrc_vals
 
-    def trim_by_power(self, padding=0, std_cut=1.5, n=10, drop=True):
+    def trim_by_power(self, padding: int = 0, std_cut: float = 1.5, n: int = 10, drop: bool = True):
         """
         Trims the sig by looking at the power envelope. Adds a slight padding to each end
         :param padding: n sample padding either side of the cut
         :param std_cut: Decide that the sig begins this many stds from the mean
         :param n: The number for the moving average
+        :drop: If drop is True then the samples are cut out from the signal, otherwise they are set to 0+0j
         """
         # If we do a moving average over the abs value of the samples (the abs value being the power!) we get a suuuper
         # clear spike where the sig begins
@@ -319,7 +316,7 @@ class Signal:
     # ************************************ Plotting Functions ************************************
     # *************************************                    ************************************
 
-    def phase_view(self, n=4000000, start_sample=0):
+    def phase_view(self, n: int = 4000000, start_sample: int = 0):
         """
         Plots the instantaneous phase of the signal
         """
