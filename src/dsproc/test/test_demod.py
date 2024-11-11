@@ -61,7 +61,7 @@ class TestDemod(unittest.TestCase):
             message = dsproc.create_message(200, M)
 
             s = dsproc.Mod(fs=10000, sps=sps, message=message)
-            s.FSK()
+            s.FSK(spacing=1000)
             d = dsproc.Demod(fs=10000)
             d.samples = s.samples.copy()
             out = d.demod_FSK(M, sps=sps, iterations=200)

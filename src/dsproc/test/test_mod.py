@@ -15,7 +15,7 @@ class TestMod(unittest.TestCase):
         for m in range(2, 16):
             MESSAGE = dsproc.create_message(1000, m)
             s = dsproc.Mod(200, MESSAGE, 2)
-            s.FSK()
+            s.FSK(spacing=50)
             self.assertEqual(len(s.samples), s.sps*len(MESSAGE))
             self.assertIsNotNone(s.samples)
 
@@ -50,7 +50,7 @@ class TestMod(unittest.TestCase):
         for m in range(2, 16):
             MESSAGE = dsproc.create_message(1000, m)
             s = dsproc.Mod(200, MESSAGE, 2)
-            s.CPFSK(squish_factor=20)
+            s.CPFSK(spacing=50)
             self.assertEqual(len(s.samples), s.sps*len(MESSAGE))
             self.assertIsNotNone(s.samples)
 
@@ -59,7 +59,7 @@ class TestMod(unittest.TestCase):
         for m in range(2, 16):
             MESSAGE = dsproc.create_message(1000, m)
             s = dsproc.Mod(200, MESSAGE, 20)
-            s.CPFSK_smoother(smooth_n=n)
+            s.CPFSK_smoother(spacing=50)
             self.assertEqual(len(s.samples), s.sps*len(MESSAGE) - (n-1))    # -(n-1) due to the moving average
             self.assertIsNotNone(s.samples)
 
