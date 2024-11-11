@@ -26,6 +26,7 @@ class Mod(Signal):
         Modulates the data into a wave using frequency shift keying.
         """
         freqs = self.message + 1      # Add one to avoid zero frequency
+        freqs = freqs.astype(np.int64)
         freqs = freqs * spacing
 
         # We want the modulation to be centered around f.
@@ -48,7 +49,6 @@ class Mod(Signal):
 
         z = self.create_samples(freq=self.f, theta=p_mod_z)
         self.samples = z.astype(np.complex64)
-
 
     def QPSK(self):
         """
@@ -120,6 +120,7 @@ class Mod(Signal):
 
         """
         freqs = self.message + 1      # Add one to avoid zero frequency
+        freqs = freqs.astype(np.int64)
         freqs = freqs * spacing
 
         # We want the modulation to be centered around f.
@@ -153,6 +154,7 @@ class Mod(Signal):
         https://dsp.stackexchange.com/questions/80768/fsk-modulation-with-python
         """
         freqs = self.message + 1      # Add one to avoid zero frequency
+        freqs = freqs.astype(np.int64)
         freqs = freqs * spacing
 
         # We want the modulation to be centered around f.
@@ -188,7 +190,6 @@ class Mod(Signal):
         z = self.amp * np.exp(1j * phi)  # creates sinusoid theta phase shift
         z = np.array(z)
         self.samples = z.astype(np.complex64)
-
 
     def FHSS(self, hop_f, freqs, pattern=np.array([])):
         """
