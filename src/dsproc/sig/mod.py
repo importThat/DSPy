@@ -19,21 +19,37 @@ class Mod(Signal):
 
         self.samples = self.create_samples(freq=self.f, amp=amp_mod_z)
 
+    def create_FSK_vector(self, spacing: int):
+        """
+        Creates a frequency vector to be used by FSK functions
+        """
+        freqs = self.message + 1      # Add one to avoid zero frequency
+        freqs = freqs.astype(np.int64)
+        freqs = freqs * spacing
+
+        # This centers it back on self.f
+        max_diff = abs((self.M)*spacing - self.f)
+        min_diff = abs(spacing - self.f)
+        change = int(abs(max_diff - min_diff)/2)
+
+        if max_diff > min_diff:
+            # We shift down
+           freqs -= change
+        elif min_diff > max_diff:
+            # we shift up
+            freqs += change
+
+        f_mod_z = np.repeat(freqs, self.sps)
+
+        return f_mod_z
+
     def FSK(self, spacing: int):
         """
         spacing: The gap in Hz between each frequency encoding
 
         Modulates the data into a wave using frequency shift keying.
         """
-        freqs = self.message + 1      # Add one to avoid zero frequency
-        freqs = freqs.astype(np.int64)
-        freqs = freqs * spacing
-
-        # We want the modulation to be centered around f.
-        freqs += self.f
-        # This centers it back on self.f
-        freqs -= int(max(freqs)/2)
-        f_mod_z = np.repeat(freqs, self.sps)
+        f_mod_z = self.create_FSK_vector(spacing)
 
         z = self.create_samples(freq=f_mod_z, theta=0, amp=1)
         self.samples = z.astype(np.complex64)
@@ -119,15 +135,8 @@ class Mod(Signal):
 
 
         """
-        freqs = self.message + 1      # Add one to avoid zero frequency
-        freqs = freqs.astype(np.int64)
-        freqs = freqs * spacing
-
-        # We want the modulation to be centered around f.
-        freqs += self.f
-        # This centers it back on self.f
-        freqs -= int(max(freqs)/2)
-        f_mod_z = np.repeat(freqs, self.sps)
+        # Create the frequency modulating vector
+        f_mod_z = self.create_FSK_vector(spacing)
 
         # Cumulative phase offset
         delta_phi = 2.0 * f_mod_z * np.pi / self.fs    # Change in phase at every timestep (in radians per timestep)
@@ -153,15 +162,8 @@ class Mod(Signal):
         resource:
         https://dsp.stackexchange.com/questions/80768/fsk-modulation-with-python
         """
-        freqs = self.message + 1      # Add one to avoid zero frequency
-        freqs = freqs.astype(np.int64)
-        freqs = freqs * spacing
-
-        # We want the modulation to be centered around f.
-        freqs += self.f
-        # This centers it back on self.f
-        freqs -= int(max(freqs)/2)
-        f_mod_z = np.repeat(freqs, self.sps)
+        # Create the frequency vector
+        f_mod_z = self.create_FSK_vector(spacing)
 
         # Now we pass an averaging window over the frequencies. This will ensure we slowly transition from one
         # frequency to the next.
@@ -216,6 +218,7 @@ class Mod(Signal):
         angle = 2 * np.pi * f_mod_z * self.t
         z = np.cos(angle) + 1j * np.sin(angle)
         self.samples *= z[0:len(self.samples)]
+
 
 
 
