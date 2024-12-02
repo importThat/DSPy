@@ -138,7 +138,7 @@ class Constellation:
         prunes the constellation down to self.M number of points. removes the furthest away first
         """
         if self.map.shape[0] == self.M:
-            print("Map already pruned")
+            # print("Map already pruned")
             return None
 
         amps = np.abs(self.map)
