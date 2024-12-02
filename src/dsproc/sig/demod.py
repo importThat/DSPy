@@ -5,13 +5,11 @@ from scipy.cluster.vq import kmeans
 from .constellation import Constellation
 from scipy.signal import correlate, savgol_filter
 
-"""
-Class with demod functions, ideally this is automated but very much still a work in progress
-
-"""
-
 
 class Demod(Signal):
+    """
+    Class containing functions for demodulating and analysing a stored wave
+    """
     def __init__(self, fs, fn=None, f=0):
         self.fn = fn
         super().__init__(f=f, fs=fs, message=[], amplitude=1)
@@ -127,6 +125,28 @@ class Demod(Signal):
         delayed = np.conj(self.samples[1:])
         self.samples = delayed * self.samples[:-1]  # Drops the last sample, this may be bad
         self.samples = np.angle(self.samples)
+
+    def message_to_ascii(self, n_bits=400, all_cuts=True):
+        """
+        Prints out and returns the first n bits of the message as ascii.
+        If all_cuts is True, then it prints out the data from each starting point in a byte
+        """
+        if all_cuts:
+            end=8
+        else:
+            end=1
+
+        text_output = []
+
+        for i in range(end):
+            byte_array = np.packbits(self.message[i:n_bits])
+            text = ''.join([chr(i) for i in byte_array])
+            text_output.append(text)
+
+        for text in text_output:
+            print(text)
+
+        return text_output
 
     def exponentiate(self, order=4):
         """
