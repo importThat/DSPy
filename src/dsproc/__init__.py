@@ -10,11 +10,10 @@ For more information on a specific class, call help(dpsroc.Class), e.g. help(dsp
 To get started there is an examples folder that contains example programs
 """
 
-__version__ = '0.0.0b'
+from .sig._sig import Signal
 from .sig.mod import Mod
 from .sig.demod import Demod
-from .util.utils import AWGN, create_message
+from .util.utils import AWGN, create_message, markify
 from .message.message import Message
 from .sig.constellation import Constellation
-from .sig.filter import Filter
 
