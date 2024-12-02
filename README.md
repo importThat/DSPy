@@ -31,6 +31,7 @@ Here are some of the things you can do with dsproc:
 - Create spectrum art by converting images to waves and transmit them via SDR!
 
 ## Minimal example
+
 ```python
 # Import the library
 import dsproc
@@ -68,7 +69,7 @@ radio_wave.time()
 # Save the wave as 64 bit complex numbers. This file can then be used directly with GNU radio or Software defined radio
 # software. It's best to save the file with the sample rate (fs) in the name because you will need this number for 
 # transmitting this wave.
-radio_wave.save("my_picture_wave_fs=10000_sps=8")
+radio_wave.save_wave("my_picture_wave_fs=10000_sps=8")
 ```
 
 ## Installation
