@@ -113,5 +113,5 @@ s.iq()
 s.fft()
 
 # Save the plot
-s.save(fn=f"QAM_generated_m={M}_fs={fs}_sps={sps}")
+s.save_wave(fn=f"QAM_generated_m={M}_fs={fs}_sps={sps}")
 
