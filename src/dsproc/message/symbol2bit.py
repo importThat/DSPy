@@ -8,7 +8,6 @@ from math import factorial
 from ..util.utils import markify
 
 
-
 class Symbol2bit:
     def __init__(self, pattern, bits_per_symbol):
         self.number_of_possible_maps = None     # a deduced count of all the possible maps
@@ -27,7 +26,6 @@ class Symbol2bit:
 
     def load_message(self, data):
         self.message = Message(data=data)
-
 
     def pad_message(self):
         remainder = self.message.data.size % self.bits_per_symbol
