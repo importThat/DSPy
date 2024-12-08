@@ -4,21 +4,26 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dsproc"
-version = "0.1.0"
-description = ''
+version = "0.1.1"
+description = "dsproc: a powerful digital signals processing toolkit"
+long_description = """dsproc is a Python package that enables the analysis and processing of digital radio signals using
+                   an intuitive and approachable framework. It supports end to end digital communcations and gives usersthe ability to
+                   encode and modulate data into radio waves of many types. Source code - https://github.com/importThat/dsproc"""
 readme = "README.md"
 requires-python = ">=3.12"
 license = {file = "LICENSE.txt"}
-keywords = []
+keywords = ["dsp", "signal", "radio", "wave", "gnu radio", "modulation", "demodulation", "sdr"]
 authors = [
   { name = "importThat" }
 ]
+
 classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: Implementation :: CPython"
 ]
+
 dependencies = [
   "numpy >= 1.26.4",
   "matplotlib >= 3.8.4",
@@ -26,20 +31,33 @@ dependencies = [
 ]
 
 [project.urls]
-Documentation = ""
+Documentation = "https://github.com/importThat/dsproc"
+Homepage = "https://github.com/importThat/dsproc"
 Issues = "https://github.com/importThat/dsproc/issues"
 Source = "https://github.com/importThat/dsproc"
 
+[tool.pylint]
+max-line-length = 120
+disable = [
+    "C0103", # (snake case arguments)
+    "C0114", # (missing-module-docstring)
+    "R0913", # (too-many-arguments)
+    "C0305", # (trailing newlines)
+    "W0511", # (To do statements)
+    "C0304", # (missing final newline)
+    "R0904", # (too many public methods)
+    "R0917"  # (too many positional arguments)
+]
 
 [tool.coverage.run]
-source_pkgs = ["tests"]
+source_pkgs = ["src"]
 branch = true
 parallel = true
-omit = []
+omit = ["Examples/*"]
 
 [tool.coverage.paths]
 dsproc = ["src/dsproc", "*/dsproc/src/dsproc"]
-tests = ["tests", "*/dsproc/tests"]
+tests = ["tests"]
 
 [tool.coverage.report]
 exclude_lines = [
