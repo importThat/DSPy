@@ -1,10 +1,10 @@
-from .message import Message
+from random import shuffle
+from math import factorial
 from collections import Counter
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy.ndimage import gaussian_filter
-from random import shuffle
-from math import factorial
+from .message import Message
 from ..util.utils import markify
 
 
