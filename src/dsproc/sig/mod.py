@@ -5,11 +5,13 @@ from ..util.utils import moving_average
 
 
 class Mod(Signal):
+    """
+    Class used for modulating data into a wave. Extends functionality from the Signal class by adding functions
+    for doing various modulation operations
+    """
     def __init__(self, fs: int, message: np.ndarray | list, sps: int = 16, amplitude: float = 1, f: int = 100):
         """
-        Class used for modulating data into a wave. Extends functionality from the Signal class by adding functions
-        for doing various modulation operations.
-
+        Initialise the Mod class.
 
         fs: Sampling frequency. How often samples will be created for the wave. A wave with a sampling rate of 100Hz
             would have 100 samples per second.
@@ -73,7 +75,7 @@ class Mod(Signal):
 
         if max_diff > min_diff:
             # We shift down
-           freqs -= change
+            freqs -= change
         elif min_diff > max_diff:
             # we shift up
             freqs += change
@@ -173,7 +175,7 @@ class Mod(Signal):
         # Create the constellation map - a lookup table of values that will be indexed by the message values
         c = Constellation(M=self.M)
 
-        if type(constellation) is str:
+        if isinstance(constellation, str):
             if constellation == "square":
                 c.square()
             elif constellation == "sunflower":
@@ -186,13 +188,13 @@ class Mod(Signal):
                 raise ValueError(f"{constellation} is not a recognised Constellation generic. "
                                  f"See docstring for options")
 
-        elif type(constellation) is np.ndarray:
+        elif isinstance(constellation, np.ndarray):
             # Test to see if constellation is a complex ndarray
             if not hasattr(constellation, "imag"):
                 raise TypeError("Provided constellation map must be a numpy array with complex type")
 
             # Test to see if the constellation map has enough points
-            elif self.M > len(constellation):
+            if self.M > len(constellation):
                 raise ValueError("Length of the provided constellation map must be greater than or equal to the number"
                                  "of unique symbols")
             c.map = constellation
@@ -300,9 +302,9 @@ class Mod(Signal):
         hop_f: How many hops per second there are, i.e. the hopping frequency. Higher hopping frequencies will require
             the receiver to retune at a faster rate to capture the transmit.
 
-        freqs: A numpy array of ints of the frequencies that are to be hopped too. Note that the frequencies are additive
-            with the center frequency of the signal. i.e. if the center frequency is 100Hz and the hop frequencies
-            are [-50, 150], then the resultant hopped signal will be at -50Hz and then 250Hz.
+        freqs: A numpy array of ints of the frequencies that are to be hopped too. Note that the frequencies are
+            additive with the center frequency of the signal. i.e. if the center frequency is 100Hz and the
+            hop frequencies are [-50, 150], then the resultant hopped signal will be at -50Hz and then 250Hz.
 
         pattern: optional, np.array of int indices that align with some frequencies in the freqs parameter.
             The pattern is an optional parameter than can be defined to say what order the freqs list should be jumped
@@ -347,6 +349,8 @@ class Mod(Signal):
         self.samples *= z[0:len(self.samples)]
 
 
-
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod(verbose=True)
 
 
