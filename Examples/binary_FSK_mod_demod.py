@@ -21,7 +21,7 @@ print(f"Message bits {MESSAGE[0:20]}")
 s = dsproc.Mod(message=MESSAGE, fs=fs, sps=sps, f=f, amplitude=1)
 
 # Apply the frequency shift keying
-s.FSK()
+s.FSK(200)
 # baseband
 s.baseband()
 
@@ -51,16 +51,16 @@ decode_0 = wave_0 * s.samples
 decode_1 = wave_1 * s.samples
 
 # It's working! We can also clearly see the samples per symbol which is really cool.
-plt.plot(decode_0.real[0:200])
-plt.plot(decode_1.real[0:200])
+# plt.plot(decode_0.real[0:200])
+# plt.plot(decode_1.real[0:200])
 
 # Now we just average them over the sample
 av_0 = np.array([np.mean(decode_0.real[i*sps:i*sps+sps]) for i in range(int(len(decode_0)/sps))])
 av_1 = np.array([np.mean(decode_1.real[i*sps:i*sps+sps]) for i in range(int(len(decode_1)/sps))])
 
 # We can cleary see the symbols!
-plt.plot(av_0[0:200])
-plt.plot(av_1[0:200])
+# plt.plot(av_0[0:200])
+# plt.plot(av_1[0:200])
 
 # Get the symbols out
 av_0 = np.round(av_0, 0).astype(np.int32)

@@ -22,7 +22,7 @@ s.QPSK()
 s.baseband()
 
 # Look at the IQ plot of the sig
-s.iq()
+# s.iq()
 
 # You can see that it is on the unit circle and has placed each symbol into one of M different phases
 

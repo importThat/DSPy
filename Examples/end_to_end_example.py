@@ -1,10 +1,11 @@
 import numpy as np
 import dsproc
+import os
 
 # *********************************** Encoding ***********************************************
 
 # Create the message and read in the data from the file
-message = dsproc.Message(fn='test_file')
+message = dsproc.Message(fn='Examples\\test_file')
 
 # compress the message, n is the block length
 prior_len = len(message.data)
@@ -51,7 +52,7 @@ s.samples = s.samples + noise
 
 
 # ***************************** Demod ********************************************
-d = dsproc.Demod(fs=s.fs, filename=None)
+d = dsproc.Demod(fs=s.fs)
 d.samples = s.samples.copy()
 sent_message = message.data.copy()
 del s, message  # Cleanup
@@ -136,4 +137,4 @@ text = ""
 for i in range(0, len(original_message), 8):
     text += chr(int(original_message[i:i+8], 2))
 
-print(text)
+# print(text)

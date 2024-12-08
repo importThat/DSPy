@@ -16,21 +16,20 @@ fn = "QAM_generated_m=4_fs=2000_sps=8"
 known_message = dsproc.create_message(10000, 4)
 
 # You will need to change this to point at the directory which contains the noisy QAM sig
-path = f"{os.getcwd()}\\{fn}"
+path = f"{os.getcwd()}\\Examples\\{fn}"
 
 # Read in the file
 # (Change fs if you changed the sampling rate)
 s = dsproc.Demod(fn=path, fs=2000)
 
 # # Look at the sig
-s.fft()
-s.iq()
-s.time()
+# s.fft()
+# s.iq()
+# s.time()
 
 # You can see in the time view that the sig doesn't start at 0
 # We need to trim the excess from the sig
 s.trim_by_power()
-# s.samples = s.samples[62000:-62000]     # Trim by hand
 
 # ********** Frequency and Phase offsets ************
 # Correct the frequency offsets
@@ -48,7 +47,7 @@ s.freq_offset(freq_offset)
 sps = int(s.fs / 250)
 
 # Looks a bit better!
-s.iq()
+# s.iq()
 
 # Next we want to resample so that we only have 1 sample per symbol.
 # By upsampling we also seek to correct any sub-sample phase offsets
@@ -71,7 +70,7 @@ for i in range(int(up_sps)):
 
 # You can see that the magnitude oscillates. We want to sample at one of the peaks. One will be the highest positive
 # magnitude, the other will be the highest negative magnitude
-plt.plot(mags)
+# plt.plot(mags)
 
 # Get the index of the biggest magnitude
 n = mags.index(max(mags))
@@ -79,7 +78,7 @@ n = mags.index(max(mags))
 # re-sample
 # Starting at a peak, get each symbol!
 s.samples = s.samples[n::int(up_sps)]
-s.iq()
+# s.iq()
 
 # Nice! It looks like a noisy sig
 # Let's bring in a constellation map and get the message back
@@ -93,16 +92,18 @@ c.normalise()
 s.normalise_amplitude()
 
 # Show the points next to the qam
-plt.scatter(s.samples.real[0:1000], s.samples.imag[0:1000])
-plt.scatter(c.map.real, c.map.imag)
+# plt.scatter(s.samples.real[0:1000], s.samples.imag[0:1000])
+# plt.scatter(c.map.real, c.map.imag)
 
 # There's clearly a phase offset, lets try to line the dots up
 s.phase_offset(angle=-55)
 s.normalise_amplitude()
 
 # Looks close enough. The clusters just have to be closest to a single dot.
-plt.scatter(s.samples.real[0:1000], s.samples.imag[0:1000])
-plt.scatter(c.map.real, c.map.imag)
+# plt.scatter(s.samples.real[0:1000], s.samples.imag[0:1000])
+# plt.scatter(c.map.real, c.map.imag)
+
+# We have lost a sample somewhere
 
 # There's a problem though. The last symbol is sitting in the middle of the plot. This is an artifact from our trimming
 # function. That's ok, we can just drop it.
@@ -110,8 +111,8 @@ plt.scatter(c.map.real, c.map.imag)
 for i in range(0, 360, 90):
     s.phase_offset(i)
     message = s.QAM(c=c)
-    if np.all(message[1:] == known_message[:-1]):
+    if np.all(message[1:] == known_message[:len(message)-1]):
         print("message successfully recovered!")
         break
 
-print(message[1:100])
+# print(message[1:100])

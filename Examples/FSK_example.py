@@ -21,22 +21,22 @@ MESSAGE = dsproc.create_message(100, 4)
 s = dsproc.Mod(message=MESSAGE, fs=fs, sps=sps, f=f)
 
 # Apply the frequency shift keying
-s.FSK()
+s.FSK(100)
 
 # We can then explore the wave using the plot functions
 # plot the first 400 samples in the time domain
-s.time(n=400)
+# s.time(n=400)
 # You can see from the fft that the wave hasn't been filtered at all
-s.fft()
+# s.fft()
 
 # The wave is currently at 2000hz, we can baseband it with the baseband function
 s.baseband()
 
 # Note that the graphs have now changed.
-s.time()
-s.fft()
-s.psd()
-s.specgram(nfft=1024)
+# s.time()
+# s.fft()
+# s.psd()
+# s.specgram(nfft=1024)
 
 # the actual samples that we have generated can be explored
 # You can see that they are complex 64 type, which can be thought of as x, y coordinates (kind of)
@@ -47,7 +47,7 @@ s.samples[0:20]
 
 # apply a frequency shift with the freq_offset method
 s.freq_offset(freq=500)
-s.fft()
+# s.fft()
 # baseband it
 s.baseband()
 

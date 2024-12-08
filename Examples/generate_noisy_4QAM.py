@@ -29,29 +29,24 @@ sps=8
 s = dsproc.Mod(fs=fs, message=MESSAGE, sps=sps, f=f)
 
 # Apply QAM modulation
-s.QAM(type="square")
+s.QAM(constellation="square")
 
 # Look at the spectrum
-s.fft()
+# s.fft()
 
 # we can see that the sig is entirely unfiltered and spreads throughout the spectrum. We should filter it down
 # to be a bit more polite!
-
-# Create a filter object with sps*10+1 taps (the magic number!)
-my_filter = dsproc.Filter(num_taps=s.sps * 10 + 1, fs=fs)
-# Create a finite infinite response filter
-my_filter.FIR(width=fs/sps*2)
-# Apply the filter to the sig at the correct frequency
-s.samples = my_filter.apply(s.samples, f_shift=f)
+s.baseband()
+_ = s.butterworth_filter(frequencies=250, filter_type="lowpass", order=5)
 
 # The spectrum looks much cleaner now
-s.fft()
+# s.fft()
 
 # Shift it down to baseband
-s.baseband()
+
 
 # Here is the IQ plot, it looks pretty funky!
-s.iq()
+# s.iq()
 
 #                              PART TWO - SIMULATE CHANNEL INTERFERENCE
 
@@ -63,17 +58,17 @@ noise = dsproc.AWGN(n=len(s.samples), power=0.02)
 s.samples = s.samples + noise
 
 # Note how the spots spread out a bit
-s.iq()
+# s.iq()
 
 # Add some noise at the start and the end of the sig to simulate a real capture
 noise_amount = int(0.2*len(noise))
 s.samples = np.concatenate([noise[0:noise_amount], s.samples, noise[0:noise_amount]])
 
 # Note how we now have a bunch of dots around 0,0
-s.iq()
+# s.iq()
 
 # You can see the preceeding and following noise in the time domain
-s.time()
+# s.time()
 
 # Add a phase offset
 
@@ -94,7 +89,7 @@ s.samples = s.samples * phase_offset
 # (Alternatively just use the native phase_offset function - s.phase_offset(angle))
 
 # Note how the symbols have all rotated by 45 degrees (pi/4)
-s.iq()
+# s.iq()
 
 
 # Add a frequency offset
@@ -108,10 +103,10 @@ s.samples = s.samples * offset
 # (Alternatively just use the native freq_offset function - s.freq_offset(freq))
 
 # Note how we now have a circle, because the frequency offset is causing the IQ points to spin
-s.iq()
+# s.iq()
 # slightly up from 0
-s.fft()
+# s.fft()
 
-# Save the plot
-s.save_wave(fn=f"QAM_generated_m={M}_fs={fs}_sps={sps}")
+# Save the wave
+# s.save_wave(fn=f"QAM_generated_m={M}_fs={fs}_sps={sps}")
 

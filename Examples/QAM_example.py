@@ -19,15 +19,15 @@ s = dsproc.Mod(Fs, MESSAGE, sps)
 # The QAM method works with arbitrary numbers of unique symbols and will trim the constellation down to the correct
 # size. Try changing the m in the create_messages functions to any integer
 
-#s.QAM(type="square")
-#s.QAM(type="sunflower")
-# s.QAM(type="star")
-s.QAM(type="square_offset")     # AKA regular hexagon
+#s.QAM(constellation="square")
+#s.QAM(constellation="sunflower")
+# s.QAM(constellation="star")
+s.QAM(constellation="square_offset")     # AKA regular hexagon
 
 # Baseband the sig
 s.baseband()
 
 # Look at the IQ plot of the sig
-s.iq()
+#s.iq()
 
 #s.save("QAM_Test")

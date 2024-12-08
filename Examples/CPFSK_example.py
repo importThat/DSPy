@@ -17,20 +17,20 @@ MESSAGE = dsproc.create_message(5000, 8)
 s = dsproc.Mod(message=MESSAGE, fs=fs, sps=16, f=f, amplitude=1)
 
 # Apply the frequency shift keying
-s.CPFSK()
+s.CPFSK(spacing= 100)
 
 # CPFSK uses a phase offset to smooth the transitions between frequency shifts. You can see this in the time
 # graph
-s.time(n=s.sps*10)
+# s.time(n=s.sps*10)
 
 # The fft is also a bit cleaner than the fsk we looked at earlier
-s.fft()
+# s.fft()
 
 # baseband it
 s.baseband()
 
 # The specgram also looks quite well formed
-s.specgram(nfft=1024)
+# s.specgram(nfft=1024)
 
 # Saves the samples as complex64 (compatible with gnuradio/usrp)
 #s.save("CPFSK_test")
