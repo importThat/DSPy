@@ -2,12 +2,13 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import pdist
 
-# TODO
-#  Implement the constellations that haven't been made yet
-
 
 class Constellation:
-    def __init__(self, M):
+    """
+    Constellation objects are used for modulating and demodulating points into complex 2d space (IQ plane). This
+    is used in quadrature amplitude signals.
+    """
+    def __init__(self, M: int):
         self.M = M  # The number of symbols
         self.order = int(np.ceil(np.sqrt(M)))    # defines how big the constellation must be to contain the symbols
         self.map = None
@@ -35,13 +36,13 @@ class Constellation:
                 if np.real(j) > 0 and np.imag(j) > 0:
                     step_out += [j + 0 + 2j, j + 2 + 0j]
 
-                elif np.real(j) < 0 and np.imag(j) > 0:
+                elif np.real(j) < 0 < np.imag(j):
                     step_out += [j + 0 + 2j, j + -2 + 0j]
 
                 elif np.real(j) < 0 and np.imag(j) < 0:
                     step_out += [j + 0 - 2j, j + -2 + 0j]
 
-                elif np.real(j) > 0 and np.imag(j) < 0:
+                elif np.real(j) > 0 > np.imag(j):
                     step_out += [j + 0 - 2j, j + 2 + 0j]
 
             # The corners
@@ -79,7 +80,7 @@ class Constellation:
                 sign = -1
 
             # Apply the offset to each row
-            self.map[start_ind:end_ind].real = (self.map[start_ind:end_ind].real + offset * sign)
+            self.map[start_ind:end_ind].real = self.map[start_ind:end_ind].real + offset * sign
 
     def sunflower(self):
         """
@@ -147,6 +148,8 @@ class Constellation:
         indexes = amps.argsort()[-n_drop::]     # Gets the indexes of the largest N items. Is indexes a word?
 
         self.map = np.delete(self.map, indexes)     # Remove the largest N values from the map
+
+        return None
 
     def normalise(self):
         """
