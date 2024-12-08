@@ -1,16 +1,20 @@
-import numpy as np
-from collections import Counter
-from collections import namedtuple
-from heapq import heapify, heappop, heappush
-from .encode import *
-
 """
 A class for handling the input, compression, and encoding of message data. Can read in and encode any file (although the
 file is stored in ram so the size may impact performance)
 """
 
+import numpy as np
+from collections import Counter
+from collections import namedtuple
+from heapq import heapify, heappop, heappush
+from .encode import hamming, ldpc, crc
+
 
 class Message:
+    """
+    Class for handling the input, compression, and encoding of message data. Can read in and encode any file (although the
+    file is stored in ram so the size may impact performance).
+    """
     def __init__(self, fn=None, data=None):
         self.pseudo_rand_sequence = None
         self.fn = fn
@@ -53,12 +57,18 @@ class Message:
         }
 
     def read(self):
+        """
+        Reads in data from a file and unpacks it to bits
+        """
         # Read in the data
         data = np.fromfile(self.fn, dtype="uint8")
         # Convert to a bit array
         self.data = np.unpackbits(data)
 
     def create_message(self, n=10):
+        """
+        Creates a random binary message of length n
+        """
         # Creates a random binary message
         self.data = np.random.choice([0, 1], size=n, p=[0.5, 0.5])
 
@@ -142,22 +152,19 @@ class Message:
             crc_checks = crc(self.data, polynomial=kwargs['polynomial'])
             if decode:
                 return crc_checks
-            else:
-                self.data = np.concatenate([self.data, crc_checks], axis=1)
+            self.data = np.concatenate([self.data, crc_checks], axis=1)
 
         elif encoder == "ldpc":
             H, G = ldpc(kwargs['n'], kwargs['j'], kwargs['k'])
             if decode:
                 return H
-            else:
-                self.apply_encode(G)
+            self.apply_encode(G)
 
         elif encoder == "hamming":
             H, G = hamming(kwargs['m'], kwargs['n'])
             if decode:
                 return H
-            else:
-                self.apply_encode(G)
+            self.apply_encode(G)
 
         else:
             raise ValueError("Unknown encoder")
@@ -175,8 +182,7 @@ class Message:
                 ham = np.count_nonzero(unique_codes[i] != unique_codes[j])
                 cum_sum.append(ham)
 
-                if ham < min_ham:
-                    min_ham = ham
+                min_ham = min(min_ham, ham)
 
         avg_ham = np.array(cum_sum)
         avg_ham = np.mean(avg_ham)
@@ -525,11 +531,13 @@ class Message:
             self.data = self.data[:-pad_amount]
 
     def ldpc_beliefprop(self):
+        """"""
         # Belief propagation for LDPC
         # https://yair-mz.medium.com/decoding-ldpc-codes-with-belief-propagation-43c859f4276d
         return None
 
     def ldpc_hard(self):
+        """"""
         # Hard decision rule for LDPC
         # https://uweb.engr.arizona.edu/~ece506/readings/project-reading/5-ldpc/LDPC_Intro.pdf
         return None
