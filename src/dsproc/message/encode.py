@@ -1,7 +1,4 @@
-import numpy as np
-
 """
-
 Encode theory.
 
 The encoder handles mapping a bit vector of length K, called s, to a codeword, called x, which will be of length N > K,
@@ -19,8 +16,9 @@ Because we know I already, whenever we create the matrices we just need to find 
 A further property of these matrices is that we want them to be linearly independent. This means that any two columns
 added to each other cannot be equal to zero. We can use this property when generating matrices. Indeed the number of
 columns that add to zero will be the overall hamming distance of the matrix!
-
 """
+
+import numpy as np
 
 
 def hamming(m, n):
@@ -193,13 +191,13 @@ def crc(data: np.ndarray, polynomial: np.ndarray | str = "32"):
                             1, 0, 1, 1, 0, 1, 1, 1])
             }
 
-    if type(polynomial) is str:
+    if isinstance(polynomial, str):
         try:
             poly = crcs[polynomial]
-        except KeyError:
-            raise KeyError("Polynomial must be an array or a string index of the polynomial dictionary")
+        except KeyError as e:
+            print(f"{e}: Polynomial must be an array or a string index of the polynomial dictionary")
 
-    elif type(polynomial) is np.array:
+    elif isinstance(polynomial, np.ndarray):
         poly = polynomial
 
     else:
@@ -230,18 +228,17 @@ def crc(data: np.ndarray, polynomial: np.ndarray | str = "32"):
 
 
 def BCH():
+    """"""
     pass
 
 
 def RS():
+    """"""
     pass
 
 
 def golay():
+    """"""
     pass
-
-
-
-
 
 
