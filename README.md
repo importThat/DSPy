@@ -85,11 +85,9 @@ pip install dsproc
 - [matplotlib - Plotting](https://matplotlib.org/)
 
 ## Testing
-To run the tests open a new terminal window in the dsproc/src/test folder and run:
-```commandline
-python -m unittest
-```
-
+I use hatch, 'hatch test --doctest-modules --ignore="Examples/*', to run all the tests and the doctests while ignoring
+the Examples folder.
+Otherwise, tests are in the tests folder, and many functions have doctests.
 
 
 
