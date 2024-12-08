@@ -1,9 +1,9 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from ._sig import Signal
 from scipy.cluster.vq import kmeans
-from .constellation import Constellation
 from scipy.signal import correlate, savgol_filter
+from ._sig import Signal
+from .constellation import Constellation
 
 
 class Demod(Signal):
@@ -19,7 +19,12 @@ class Demod(Signal):
         else:
             self.samples = np.array([])
 
-    def read_file(self, folder=""):
+    def read_file(self, folder: str = ""):
+        """
+        Reads in complex 64 samples as might be captured by a software defined radio.
+        :param folder: Subfolder or abs path. Includes slashes /
+        :return:
+        """
         file = folder + self.fn
         samples = np.fromfile(file, np.complex64)
         return samples
@@ -40,8 +45,8 @@ class Demod(Signal):
             try:
                 self.fs = int(params[3])
                 self.f = int(params[4])
-            except:
-                raise ValueError("Capture does not appear to be in gqrx format")
+            except Exception as e:
+                raise ValueError("Capture does not appear to be in gqrx format") from e
 
     def detect_clusters(self, M, iters=3):
         """
@@ -51,7 +56,7 @@ class Demod(Signal):
         :param iters: The number of times to run the kmeans algorithm
         :return: A constellation object with the cluster data
         """
-        if M < 0 or type(M) != int or M > len(self.samples):
+        if M < 0 or not isinstance(M, int) or M > len(self.samples):
             raise ValueError("M must be an integer > 0 and less than the number of samples available")
 
         # The points to cluster
@@ -121,12 +126,16 @@ class Demod(Signal):
         plt.show()
 
     def quadrature_demod(self):
+        """
+        Quadrature demodulation of an analog FSK signal
+        :return:
+        """
 
         delayed = np.conj(self.samples[1:])
         self.samples = delayed * self.samples[:-1]  # Drops the last sample, this may be bad
         self.samples = np.angle(self.samples)
 
-    def message_to_ascii(self, n_bits=400, all_cuts=True):
+    def message_to_ascii(self, n_bits: int = 400, all_cuts: bool = True):
         """
         Prints out and returns the first n bits of the message as ascii.
         If all_cuts is True, then it prints out the data from each starting point in a byte
@@ -148,7 +157,7 @@ class Demod(Signal):
 
         return text_output
 
-    def exponentiate(self, order=4):
+    def exponentiate(self, order: int = 4):
         """
         Raises a sig to the nth power to find the frequency offset and the likely samples per symbol
         """
@@ -174,7 +183,7 @@ class Demod(Signal):
 
         return freq
 
-    def QAM(self, c):
+    def QAM(self, c: Constellation):
         """
         Converts the samples in memory to the closest symbols found in a given constellation plot and returns the
         output
@@ -187,7 +196,7 @@ class Demod(Signal):
 
         return np.array(out)
 
-    def demod_ASK(self, m, iterations=1000):
+    def demod_ASK(self, m: int, iterations: int = 1000):
         """
         Attempts to demodulate an amplitude shift keyed signal. Looks for m levels in the signal and assigns symbol
         values to those levels. Assumes that the signal is currently at one sample per symbol.
@@ -210,7 +219,7 @@ class Demod(Signal):
 
         return np.array(out)
 
-    def demod_FSK(self, m, sps, iterations=1000):
+    def demod_FSK(self, m: int, sps: int, iterations: int = 1000):
         """
         Attempts to demodulate a frequency shift keyed signal. First it attempts to smooth any high frequency peaks
         that might be caused by phase changes. Then it averages the frequency across the sample and maps the averages
@@ -234,8 +243,7 @@ class Demod(Signal):
                 # If it's the last sample
                 if i == len(freq)-1:
                     continue
-                else:
-                    freq[i] = freq[i + 1]
+                freq[i] = freq[i + 1]
 
         # Changes peaks into the average
         sd = np.std(freq)
@@ -247,7 +255,7 @@ class Demod(Signal):
             # If it is a peak, we want to look ahead to the next non-peak and use that value
             # (because peaks will probably occur at symbol boundaries)
             if peak_mask[i]:
-                non_peak_index = np.where(peak_mask[i:i + sps] == False)[0]
+                non_peak_index = np.where(peak_mask[i:i + sps] is False)[0]
                 if non_peak_index.size > 0:
                     # Get the next non-peak value and overwrite the current peak with it
                     freq[i] = freq[i + non_peak_index[0]]
