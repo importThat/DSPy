@@ -1,20 +1,27 @@
+"""
+Contains plotting function for analysing a signal
+"""
+import numpy as np
+from matplotlib import pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
-from matplotlib import pyplot as plt
-import numpy as np
 
 
-"""
-Contains the functions for plotting modulations
-"""
 
-# TODO
+
+# TODO:
 #  Make plots only use a sensible number of samples of the data
 #  Animate plots
 #  Add FFt bins
+#  Restructure
 
 
 def plot(data, **kwargs):
+    """
+    Main plotting function. Generates and displays the correct plot.
+    :param data: array of complex 64 values
+    :param kwargs: plotting key word arguments
+    """
     if kwargs['type'] == "specgram":
         plt.specgram(data, NFFT=kwargs['nfft'], Fs=kwargs['fs'])
         plt.title(kwargs['title'])
