@@ -1,25 +1,30 @@
-import numpy as np
 from time import time
+from pathlib import Path
+import numpy as np
 from scipy.io.wavfile import write
 from scipy import signal
-from pathlib import Path
 from .plot import plot
 
 
 class Signal:
-    def __init__(self, fs: int, message: np.ndarray | list, sps: int = 2,
-                 amplitude: float = 1.0, f: int = 100):
+    """
+    Main class for the modulation and demodulation of data into radio waves. Contains functionality for writing
+    waves and performing operations on the waveform such as frequency shifting, phase shifting, and resampling.
+    """
+    def __init__(self, fs: int, message: np.ndarray | list,
+                 sps: int = 2,
+                 amplitude: float = 1.0,
+                 f: int = 100):
         """
-        Main class for the modulation and demodulation of data into radio waves. Contains functionality for writing
-        waves and performing operations on the waveform such as frequency shifting, phase shifting, and resampling.
+        Initialise the signal object.
 
-        fs: Sampling frequency. How often samples will be created for the wave. A wave with a sampling rate of 100Hz
-            would have 100 samples per second.
-        message: A numpy array of ints containing the message symbols which will be written into a wave.
-        sps: How many samples to generate per symbol. Typical values are between 8 and 20. Lowering the samples
+        :param fs: Sampling frequency. How often samples will be created for the wave. A wave with a sampling rate of
+            100Hz would have 100 samples per second.
+        :param message: A numpy array of ints containing the message symbols which will be written into a wave.
+        :param sps: How many samples to generate per symbol. Typical values are between 8 and 20. Lowering the samples
             per symbol will increase the data rate at the expense of making it more susceptible to errors.
-        amplitude: The (approximate) max amplitude of the wave, typically 1.
-        f: The centre frequency of the signal. Should be somewhere between -fs/2 and fs/2.
+        :param amplitude: The (approximate) max amplitude of the wave, typically 1.
+        :param f: The centre frequency of the signal. Should be somewhere between -fs/2 and fs/2.
 
         >>> s = Signal(10000, message=np.array([1, 0, 1, 1, 1]), sps=32, f=3000)    # instance a Signal object
         >>> (s.fs, s.message, s.sps, s.f)   # Display the parameters
@@ -57,15 +62,11 @@ class Signal:
         if len(self.message) == 0:
             if len(self.samples) == 0:  # It's nice to be able to init the demod class without any data sometimes
                 return 0
-            else:
-                return len(self.samples)
 
-        else:
-            if len(self.samples) == 0:
-                return self.sps * len(self.message)
+        if len(self.samples) == 0:
+            return self.sps * len(self.message)
 
-            else:
-                return len(self.samples)
+        return len(self.samples)
 
     @property
     def dur(self) -> float:
@@ -104,7 +105,7 @@ class Signal:
 
     def create_samples(self, freq: int | np.ndarray,
                        theta: int | np.ndarray = 0,
-                       amp: int | np.ndarray = 1) -> np.ndarray:
+                       amp: float | np.ndarray = 1) -> np.ndarray:
         """
         Creates the samples of a complex wave using the following formula:
 
@@ -116,6 +117,10 @@ class Signal:
             t = a time vector of the times samples are taken (self.t)
             theta = a phase offset
             and j is the programming term for i, the complex number
+
+        :param freq: The frequency value/s. Int or np array
+        :param theta: The phase value/s in radians. Int or np array
+        :param amp: The amplitude values. Float or np array
 
         # TODO: Might be best if this lived in the Mod class
         >>> s = Signal(10000, message=np.array([1, 0, 2]), sps=3, f=3000)
@@ -137,28 +142,30 @@ class Signal:
         t = self.t.copy()
 
         # If we're supplying a frequency vector (for FSK) then the length might not be compatible with t
-        if type(freq) == np.ndarray:
+        if isinstance(freq, np.ndarray):
             t = t[0:len(freq)]
 
         # Same for phase
-        if type(theta) == np.ndarray:
+        if isinstance(theta, np.ndarray):
             t = t[0:len(theta)]
 
         # same for amplitude
-        if type(amp) == np.ndarray:
+        if isinstance(amp, np.ndarray):
             t = t[0:len(amp)]
 
-        # If there's no frequency (for example we just want to do a phase offset)
-        if freq is int:
+        # Frequency has to be a non-zero value
+        if isinstance(freq, int):
             if freq == 0:
-                z = amp * np.cos(theta) + 1j * amp * np.sin(theta)
+                raise ValueError("Cannot make a zero frequency wave, set frequency to some non zero value")
+        elif isinstance(freq, np.ndarray):
+            if np.all(freq == 0):
+                raise ValueError("Cannot make a zero frequency wave, set frequency to some non zero value")
 
-        else:
-            angle = 2 * np.pi * freq * t + theta
+        angle = 2 * np.pi * freq * t + theta
 
-            # equivalent to z = amp * np.exp(1j * (2 * np.pi * freq * t + theta))
-            # but this way is faster
-            z = amp * np.cos(angle) + 1j * amp * np.sin(angle)
+        # equivalent to z = amp * np.exp(1j * (2 * np.pi * freq * t + theta))
+        # but this way is faster
+        z = amp * np.cos(angle) + 1j * amp * np.sin(angle)
 
         # If the dtype has changed due to different input dtypes
         if z.dtype != np.complex64:
@@ -182,8 +189,6 @@ class Signal:
         >>> s.baseband()    # Baseband it
         >>> s.f
         0
-
-
         """
         if not self.f:
             raise ValueError("Cannot baseband signal because the center frequency is unknown. Set the attribute 'f' to "
@@ -203,14 +208,20 @@ class Signal:
         >>> # Put some samples in for demo purposes
         >>> s.samples = np.array([6.6+0.j, 5.3+3.9j, 2.0+6.3j, -2.0+6.3j, -5.39+3.9j])
         >>> s.normalise_amplitude()
-        >>> (max(s.samples.real), min(s.samples.real), max(s.samples.imag), max(s.samples.imag))
-        (np.float64(1.0), np.float64(-0.8101636576198), np.float64(0.9531242671445427), np.float64(0.9531242671445427))
+        >>> np.round((max(s.samples.real), min(s.samples.real), max(s.samples.imag), max(s.samples.imag)), 2)
+        array([ 1.  , -0.82,  0.95,  0.95])
         """
-        self.samples = np.exp(1j*np.angle(self.samples))
+        max_real = max(abs(self.samples.real))
+        max_imag = max(abs(self.samples.imag))
+
+        max_val = max(max_imag, max_real)
+        self.samples = (self.samples / max_val)
 
     def phase_offset(self, angle: int = 40) -> None:
         """
         Adds a phase offset of x degrees to the signal
+
+        :param angle: Phase offset in degrees
         """
         # degrees to radians
         phase_offset = angle*np.pi / 180
@@ -225,6 +236,8 @@ class Signal:
         Moves the signal up by the given frequency. Adds the frequency offset to the 'f' attribute. Note that the
         frequency components of a signal are (kind of) bounded to between -fs/2 and fs/2, so shifting a signal up in
         frequency may cause it to wrap around to a negative frequency.
+
+        :param freq: Int, the frequency to shift the signal by. Can be negative.
         """
         freq_offset = self.create_samples(freq=freq, theta=0, amp=1)
         freq_offset = freq_offset[0:len(self.samples)]  # In case it's a bit longer
@@ -237,7 +250,10 @@ class Signal:
 
     def resample(self, up: int = 16, down: int = 1) -> None:
         """
-        A simple wrapper for scipy's resample. Resamples the signal up/down by the given factor.
+        A simple wrapper for scipy's resample. Resamples the signal a factor equal to up/down.
+
+        :param up: Factor to upsample by
+        :param down: Factor to downsample by
 
         Examples
         # Create a signal and upsample it
@@ -264,9 +280,9 @@ class Signal:
         """
         wrapper for scipy's decimate. First filters out high frequency components and then takes every nth sample
 
-        n: The down sampling factor. If greater than 13 it is reccommended to decimate in stages
-        filter_order: The order of the filter, defaults to 8 for iir
-        ftype: The filter type, 'iir' (infinite impulse response) or 'fir' (finite impulse response)
+        :param n: The down sampling factor. If greater than 13 it is reccommended to decimate in stages
+        :param filter_order: The order of the filter, defaults to 8 for iir
+        :param ftype: The filter type, 'iir' (infinite impulse response) or 'fir' (finite impulse response)
 
         # Create a signal and decimate it 10x
         >>> s = Signal(10000, message=np.array([1, 0, 1, 0, 1, 1, 0, 1, 0, 1]), sps=70, f=3000)
@@ -303,17 +319,20 @@ class Signal:
         power = np.sum(np.abs(filtered))
         return power
 
-    def butterworth_filter(self, frequencies: int | list | tuple, filter_type: str, order: int = 5) \
+    def butterworth_filter(self, frequencies: int | list | tuple,
+                           filter_type: str,
+                           order: int = 5) \
             -> tuple[np.ndarray, np.ndarray | float, np.ndarray]:
         """
         Generic wrapper for scipy's butterworth filter. Creates and applies a digital butterworth filter to the signal,
         Returns the filter taps for investigation of the filter parameters.
 
-        frequencies: int, or tuple/list of length 2. The frequencies to apply the filter at
-        filter_type: String, the direction the filter works in. One of ['lowpass', 'highpass', 'bandpass', 'bandstop']
-        order: the order of the filter (how many taps it has)
+        :param frequencies: int, or tuple/list of length 2. The frequencies to apply the filter at
+        :param filter_type: String, the direction the filter works in. One of
+            ['lowpass', 'highpass', 'bandpass', 'bandstop']
+        :param order: the order of the filter (how many taps it has)
 
-        returns the filter taps as an np.ndarray
+        :return: the filter taps as an np.ndarray
         """
         filt = signal.butter(N=order, Wn=frequencies, btype=filter_type, analog=False, output='sos', fs=self.fs)
         self.samples = signal.sosfilt(filt, self.samples)
@@ -403,7 +422,8 @@ class Signal:
         # Return the filter values
         return rrc_vals
 
-    def trim_by_power(self, padding: int = 0, std_cut: float = 1.5, n: int = 10, drop: bool = True):
+    def trim_by_power(self, padding: int = 0, std_cut: float = 1.5,
+                      n: int = 10, drop: bool = True):
         """
         Trims low power noise from the beginning and end of a signal. Runs a moving average over the samples first.
         When recording a signal manually there will always be unwanted noise before the signal and after the signal.
@@ -413,7 +433,7 @@ class Signal:
         :param std_cut: The threshold that is used to decide if a sample is part of the signal or not, measured in
                         standard deviations from the mean
         :param n: The length of the moving average that is applied to the samples before cutting
-        :drop: If drop is True then the samples are cut out from the signal, otherwise they are set to 0+0j
+        :param drop: If drop is True then the samples are cut out from the signal, otherwise they are set to 0+0j
         """
         # If we do a moving average over the abs value of the samples (the abs value being the power) we get a
         # clear spike where the sig begins
@@ -424,8 +444,7 @@ class Signal:
 
         # first is the turn on, last is turn off
         first_ind = index[0] - int(padding)
-        if first_ind < 0:
-            first_ind = 0
+        first_ind = max(first_ind, 0)
 
         last_ind = index[-1] + int(padding)
 
@@ -441,7 +460,10 @@ class Signal:
 
     def phase_view(self, n: int = 4000000, start_sample: int = 0):
         """
-        Plots the instantaneous phase of the signal
+        Generates and displays a phase trace plot. This is the phase of each samples.
+
+        :param n: How many samples to plot
+        :param start_sample: The sample to start plotting from
         """
         kwargs = {
             "type": "view",
@@ -450,10 +472,13 @@ class Signal:
             }
         plot(self.samples[start_sample:start_sample + n], **kwargs)
 
-    def freq_view(self, n=4000000, start_sample=0):
+    def freq_view(self, n: int = 4000000, start_sample: int = 0):
         """
-        Plots the instantaneous frequency of the signal
-        TODO: Fix the large freq spikes
+        TODO: Fix the big freq spikes somehow
+        Generates and displays a frequency trace plot. This is the instantaneous frequencies of the samples.
+
+        :param n: How many samples to plot
+        :param start_sample: The sample to start plotting from
         """
         kwargs = {
             "type": "view",
@@ -463,9 +488,12 @@ class Signal:
             }
         plot(self.samples[start_sample:start_sample + n], **kwargs)
 
-    def amp_view(self, n=4000000, start_sample=0):
+    def amp_view(self, n: int = 4000000, start_sample: int = 0):
         """
-        Plots the instantaneous amplitude of the signal
+        Generates and displays a amplitude trace plot. This is the absolute value of the samples
+
+        :param n: How many samples to plot
+        :param start_sample: The sample to start plotting from
         """
         kwargs = {
             "type": "view",
@@ -474,7 +502,12 @@ class Signal:
             }
         plot(self.samples[start_sample:start_sample + n], **kwargs)
 
-    def specgram(self, nfft=1024):
+    def specgram(self, nfft: int = 1024):
+        """
+        Creates a spectrogram plot
+
+        :param nfft: The size of the fft filter. Make this larger for more detail in the plot
+        """
         # Nfft shouldn't be bigger than the samples
         if nfft >= len(self.samples):
             nfft = int(len(self.samples)/4)
@@ -486,27 +519,49 @@ class Signal:
 
         plot(self.samples, **kwargs)
 
-    def psd(self, nfft=1024):
+    def psd(self, nfft: int = 1024):
+        """
+        Generates and displays a power spectrum density plot
+
+        :param nfft: How many bins the fft uses. A bigger nfft results in more detail
+        """
         kwargs = {"type": "psd",
                   "nfft": nfft,
                   "fs": self.fs,
                   "title": f"PSD at Baseband (NFFT={nfft})"}
         plot(self.samples, **kwargs)
 
-    def iq(self, n=500000, start_sample=0):
+    def iq(self, n: int = 500000, start_sample: int = 0):
+        """
+        Generates and displays a IQ plot
+
+        :param n: How many samples to plot
+        :param start_sample: The sample to start plotting from
+        """
         kwargs = {"type": "iq",
                   "title": "IQ Scatter"}
 
         plot(self.samples[start_sample:start_sample+n], **kwargs)
 
-    def fft(self, nfft=1024):
+    def fft(self, nfft: int = 1024) -> None:
+        """
+        Generates and displays a frequency domain plot
+
+        :param nfft: How many bins the fft uses. A bigger nfft results in more detail
+        """
         kwargs = {"type": "fft",
                   "title": "FFT of Signal",
                   "fs": self.fs,
                   "nfft": nfft}
         plot(self.samples, **kwargs)
 
-    def time(self, n=400000, start_sample=0):
+    def time(self, n: int = 400000, start_sample: int = 0) -> None:
+        """
+        Generates and displays a time series plot
+
+        :param n: How many samples to plot
+        :param start_sample: The sample to start plotting from
+        """
         t = self.t
         t = t[start_sample:start_sample+n]
 
@@ -517,7 +572,13 @@ class Signal:
 
         plot(self.samples[start_sample:start_sample+n], **kwargs)
 
-    def save_wave(self, fn=None, path=None, wav=False):
+    def save_wave(self, fn: str = None, path: Path = None, wav: bool = False) -> None:
+        """
+        Saves the samples to a file. Either saves as complex64 or as a wav file if wav=True
+        :param fn: str, filename
+        :param path: path object of the directory to save to. defaults to the current working directory
+        :param wav: bool, if true outputs the samples as a .wav file which can be listened to.
+        """
         # If there is no path provided then save it in the directory the function is called from
         path_object = None
         if not path:
@@ -557,6 +618,7 @@ class Signal:
     def save_message(self, fn: str) -> None:
         """
         Saves the stored message to a raw bytes file. This is useful for demodulating.
+        :param fn: Filename
         """
         message_bytes = np.packbits(self.message)
         message_bytes.tofile(fn)
@@ -565,3 +627,4 @@ class Signal:
 if __name__ == "__main__":
     import doctest
     doctest.testmod(verbose=True)
+
