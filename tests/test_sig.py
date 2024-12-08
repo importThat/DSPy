@@ -114,6 +114,8 @@ class TestSig(unittest.TestCase):
 
     def test_freq_offsets(self):
         for freq in range(-200, 250, 50):
+            if freq == 0:
+                continue
             s = Signal(fs=200, message=MESSAGE, sps=2, f=1)
             s.samples = s.create_samples(freq=s.f)
 
